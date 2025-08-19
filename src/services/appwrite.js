@@ -5,6 +5,11 @@ const client = new Client()
   .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
   .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df');
 
+// Add API key if provided (for server-side permissions)
+if (import.meta.env.VITE_APPWRITE_API_KEY) {
+  client.setKey(import.meta.env.VITE_APPWRITE_API_KEY);
+}
+
 // Initialize services
 export const databases = new Databases(client);
 export const storage = new Storage(client);
