@@ -8,8 +8,8 @@
 
 # Function configuration
 [functions]
-  # Increase timeout to 26 seconds (max for free tier)
-  timeout = 26
+  # Directory where functions are stored
+  directory = "netlify/functions"
 
 # Redirects for SPA
 [[redirects]]
