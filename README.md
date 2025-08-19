@@ -22,6 +22,10 @@ A Vue.js application for creating comprehensive band profiles and AI-optimized s
    Create a `.env` file in the root directory:
    ```
    VITE_ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+   VITE_APPWRITE_PROJECT_ID=6761a31600224c0e82df
+   VITE_APPWRITE_DATABASE_ID=mitchly-music-db
+   VITE_MUREKA_API_KEY=your_mureka_api_key_here
    ```
 
 3. **Development server:**
@@ -33,6 +37,64 @@ A Vue.js application for creating comprehensive band profiles and AI-optimized s
    ```bash
    npm run build
    ```
+
+## Appwrite Configuration
+
+The app uses Appwrite for backend services (database and storage). It includes automatic fallback to localStorage when Appwrite is unavailable.
+
+### Setting up Appwrite
+
+1. **Create an Appwrite Account:**
+   - Go to [Appwrite Cloud](https://cloud.appwrite.io)
+   - Create a new project or use existing project ID: `6761a31600224c0e82df`
+
+2. **Configure CORS (Important!):**
+   - Go to your Appwrite Console
+   - Navigate to **Project Settings** → **Platforms**
+   - Add a **Web Platform** with these URLs:
+     - `http://localhost:5173` (for local development)
+     - `https://mitchlymusic.netlify.app` (for production)
+     - Your custom domain if applicable
+
+3. **Create Database:**
+   - Go to **Databases** → **Create Database**
+   - Name: `mitchly-music-db`
+   - Create two collections:
+     - `bands` - for band profiles
+     - `songs` - for song data
+
+4. **Create Storage Bucket:**
+   - Go to **Storage** → **Create Bucket**
+   - Bucket ID: `mitchly-music`
+   - Name: "Mitchly Music Files"
+   - Enable file security if needed
+
+### Database Schema
+
+**Bands Collection:**
+- `bandName` (string) - Band/artist name
+- `primaryGenre` (string) - Main genre
+- `profileData` (string/JSON) - Complete profile data
+- `imageUrl` (string, optional) - Band image URL
+- `logoUrl` (string, optional) - Band logo URL
+
+**Songs Collection:**
+- `bandId` (string) - Reference to band document
+- `title` (string) - Song title
+- `trackNumber` (integer) - Track position
+- `lyrics` (string) - Song lyrics
+- `description` (string, optional) - Song description
+- `audioUrl` (string, optional) - Generated audio URL
+- `murekaTaskId` (string, optional) - Mureka generation ID
+- `status` (string) - Generation status
+
+### Offline Mode
+
+When Appwrite is unavailable (CORS issues, network problems, etc.), the app automatically:
+- Switches to localStorage for data persistence
+- Shows an "Offline Mode" indicator in the header
+- Saves bands and songs locally with `local_` prefix IDs
+- Syncs data when connection is restored (manual sync required)
 
 ## Deployment to Netlify
 

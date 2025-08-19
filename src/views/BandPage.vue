@@ -1,10 +1,10 @@
 <template>
-  <div class="band-page min-h-screen bg-gray-50">
+  <div class="band-page min-h-screen bg-mitchly-dark">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
       <div class="text-center">
-        <Loader class="w-12 h-12 text-purple-600 animate-spin mx-auto" />
-        <p class="mt-4 text-gray-600">Loading band profile...</p>
+        <Loader class="w-12 h-12 text-mitchly-blue animate-spin mx-auto" />
+        <p class="mt-4 text-gray-400">Loading band profile...</p>
       </div>
     </div>
 
@@ -12,9 +12,9 @@
     <div v-else-if="error" class="flex items-center justify-center min-h-screen">
       <div class="text-center">
         <XCircle class="w-12 h-12 text-red-500 mx-auto" />
-        <p class="mt-4 text-gray-800 font-semibold">Band not found</p>
-        <p class="text-gray-600">{{ error }}</p>
-        <router-link to="/" class="mt-4 inline-block text-purple-600 hover:text-purple-700">
+        <p class="mt-4 text-white font-semibold">Band not found</p>
+        <p class="text-gray-400">{{ error }}</p>
+        <router-link to="/" class="mt-4 inline-block text-mitchly-blue hover:text-mitchly-blue/80">
           ← Back to Home
         </router-link>
       </div>
@@ -23,7 +23,7 @@
     <!-- Band Profile -->
     <div v-else-if="band">
       <!-- Hero Section with Band Image -->
-      <div class="relative h-96 bg-gradient-to-br from-pink-600 to-purple-700 overflow-hidden">
+      <div class="relative h-96 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
         <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-10">
           <div class="absolute inset-0 bg-white/10"></div>
@@ -34,7 +34,7 @@
           <div class="container mx-auto px-6 pb-8">
             <div class="flex items-end gap-6">
               <!-- Band Image/Logo -->
-              <div class="w-32 h-32 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+              <div class="w-32 h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center">
                 <Music class="w-16 h-16 text-white" />
               </div>
               
@@ -57,7 +57,7 @@
               <!-- Share Button -->
               <button
                 @click="shareBand"
-                class="bg-white/20 backdrop-blur hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-white"
+                class="bg-mitchly-blue/10 backdrop-blur hover:bg-mitchly-blue/20 px-4 py-2 rounded-lg transition-all border border-mitchly-blue/30 flex items-center gap-2 text-mitchly-blue"
               >
                 <Share2 class="w-5 h-5" />
                 Share
@@ -68,7 +68,7 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="bg-white shadow-sm sticky top-0 z-40">
+      <div class="bg-mitchly-darker border-b border-mitchly-gray sticky top-0 z-40">
         <div class="container mx-auto px-6">
           <div class="flex gap-8">
             <button
@@ -78,8 +78,8 @@
               :class="[
                 'py-4 px-2 border-b-2 font-medium transition-colors',
                 activeTab === tab.id 
-                  ? 'border-purple-600 text-purple-600' 
-                  : 'border-transparent text-gray-600 hover:text-gray-800'
+                  ? 'border-mitchly-blue text-mitchly-blue' 
+                  : 'border-transparent text-gray-400 hover:text-white'
               ]"
             >
               {{ tab.label }}
@@ -94,35 +94,35 @@
         <div v-show="activeTab === 'overview'">
           <div class="grid md:grid-cols-2 gap-8">
             <!-- About -->
-            <div class="bg-white rounded-lg p-6 shadow-sm">
-              <h2 class="text-xl font-bold mb-4">About</h2>
-              <p class="text-gray-700 mb-4">{{ bandProfile.backstory }}</p>
-              <p class="text-gray-700">{{ bandProfile.coreSound }}</p>
+            <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
+              <h2 class="text-xl font-bold mb-4 text-white">About</h2>
+              <p class="text-gray-300 mb-4">{{ bandProfile.backstory }}</p>
+              <p class="text-gray-300">{{ bandProfile.coreSound }}</p>
             </div>
 
             <!-- Details -->
-            <div class="bg-white rounded-lg p-6 shadow-sm">
-              <h2 class="text-xl font-bold mb-4">Details</h2>
+            <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
+              <h2 class="text-xl font-bold mb-4 text-white">Details</h2>
               <dl class="space-y-3">
                 <div>
-                  <dt class="text-sm text-gray-500">Vocal Style</dt>
-                  <dd class="text-gray-800">{{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</dd>
+                  <dt class="text-sm text-gray-400">Vocal Style</dt>
+                  <dd class="text-white">{{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm text-gray-500">Influences</dt>
-                  <dd class="text-gray-800">{{ bandProfile.influences?.join(', ') }}</dd>
+                  <dt class="text-sm text-gray-400">Influences</dt>
+                  <dd class="text-white">{{ bandProfile.influences?.join(', ') }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm text-gray-500">Themes</dt>
-                  <dd class="text-gray-800">{{ bandProfile.lyricalThemes?.join(', ') }}</dd>
+                  <dt class="text-sm text-gray-400">Themes</dt>
+                  <dd class="text-white">{{ bandProfile.lyricalThemes?.join(', ') }}</dd>
                 </div>
               </dl>
             </div>
           </div>
 
           <!-- AI Description -->
-          <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 mt-8">
-            <h3 class="font-semibold mb-2">AI Music Platform Description</h3>
+          <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-lg p-6 mt-8 border border-gray-800">
+            <h3 class="font-semibold mb-2 text-white">AI Music Platform Description</h3>
             <p class="text-gray-700">{{ bandProfile.aiDescription }}</p>
           </div>
         </div>
@@ -131,22 +131,22 @@
         <div v-show="activeTab === 'music'">
           <!-- Album Info -->
           <div class="bg-white rounded-lg p-6 shadow-sm mb-8">
-            <h2 class="text-2xl font-bold mb-2">{{ bandProfile.albumConcept?.title }}</h2>
+            <h2 class="text-2xl font-bold mb-2 text-white">{{ bandProfile.albumConcept?.title }}</h2>
             <p class="text-gray-700">{{ bandProfile.albumConcept?.description }}</p>
           </div>
 
           <!-- Track Listing -->
           <div class="bg-white rounded-lg p-6 shadow-sm">
-            <h3 class="text-xl font-bold mb-4">Track Listing</h3>
+            <h3 class="text-xl font-bold mb-4 text-white">Track Listing</h3>
             <div class="space-y-3">
               <div
                 v-for="(track, index) in bandProfile.trackListing"
                 :key="index"
-                class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                class="flex items-center justify-between p-3 hover:bg-mitchly-dark rounded-lg transition-colors"
               >
                 <div class="flex items-center gap-3">
-                  <span class="text-gray-500 w-8">{{ index + 1 }}.</span>
-                  <span class="font-medium">{{ track }}</span>
+                  <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
+                  <span class="font-medium text-white">{{ track }}</span>
                   <PlayCircle 
                     v-if="getSongAudio(track)" 
                     class="w-5 h-5 text-green-500"
@@ -157,7 +157,7 @@
                   <button
                     v-if="getSongLyrics(track)"
                     @click="showLyrics(track)"
-                    class="text-purple-600 hover:text-purple-700 text-sm"
+                    class="text-mitchly-blue hover:text-mitchly-blue/80 text-sm"
                   >
                     View Lyrics
                   </button>
@@ -168,7 +168,7 @@
 
           <!-- Audio Player -->
           <div v-if="availableAudioTracks.length > 0" class="mt-8">
-            <h3 class="text-xl font-bold mb-4">Listen Now</h3>
+            <h3 class="text-xl font-bold mb-4 text-white">Listen Now</h3>
             <AudioPlayer 
               :tracks="availableAudioTracks"
               :autoPlay="false"
@@ -183,19 +183,19 @@
             <div class="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 class="font-semibold mb-2">Colors</h3>
-                <p class="text-gray-700">{{ bandProfile.visualIdentity?.colors }}</p>
+                <p class="text-gray-300">{{ bandProfile.visualIdentity?.colors }}</p>
               </div>
               <div>
                 <h3 class="font-semibold mb-2">Aesthetic</h3>
-                <p class="text-gray-700">{{ bandProfile.visualIdentity?.aesthetic }}</p>
+                <p class="text-gray-300">{{ bandProfile.visualIdentity?.aesthetic }}</p>
               </div>
               <div>
                 <h3 class="font-semibold mb-2">Logo Concept</h3>
-                <p class="text-gray-700">{{ bandProfile.visualIdentity?.logo }}</p>
+                <p class="text-gray-300">{{ bandProfile.visualIdentity?.logo }}</p>
               </div>
               <div>
                 <h3 class="font-semibold mb-2">Overall Style</h3>
-                <p class="text-gray-700">{{ bandProfile.visualIdentity?.style }}</p>
+                <p class="text-gray-300">{{ bandProfile.visualIdentity?.style }}</p>
               </div>
             </div>
           </div>
@@ -210,19 +210,19 @@
       @click="lyricsModal.show = false"
     >
       <div 
-        class="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto p-6"
+        class="bg-mitchly-gray rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto p-6 border border-gray-800"
         @click.stop
       >
         <div class="flex justify-between items-start mb-4">
-          <h3 class="text-xl font-bold">{{ lyricsModal.title }}</h3>
+          <h3 class="text-xl font-bold text-white">{{ lyricsModal.title }}</h3>
           <button 
             @click="lyricsModal.show = false"
-            class="text-gray-500 hover:text-gray-700"
+            class="text-gray-400 hover:text-white"
           >
             <X class="w-6 h-6" />
           </button>
         </div>
-        <pre class="whitespace-pre-wrap text-gray-700 font-sans">{{ lyricsModal.lyrics }}</pre>
+        <pre class="whitespace-pre-wrap text-gray-300 font-sans">{{ lyricsModal.lyrics }}</pre>
       </div>
     </div>
   </div>

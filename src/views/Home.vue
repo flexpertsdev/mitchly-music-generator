@@ -1,19 +1,42 @@
 <template>
-  <div class="home">
+  <div class="home min-h-screen bg-mitchly-dark">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6 shadow-lg">
-      <div class="container mx-auto flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-bold">Mitchly Music Generator</h1>
-          <p class="text-purple-100 mt-1">AI-Powered Band & Song Creation Suite</p>
+    <header class="bg-mitchly-darker border-b border-mitchly-gray">
+      <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+              <span class="text-mitchly-blue">⚡</span>
+              Mitchly Music Generator
+            </h1>
+            <p class="text-gray-400 mt-1">AI-Powered Band & Song Creation Suite</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <!-- Status Indicator -->
+            <div 
+              :class="[
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm',
+                appStatus.isAvailable 
+                  ? 'bg-green-900/20 text-green-400 border border-green-800/30' 
+                  : 'bg-yellow-900/20 text-yellow-400 border border-yellow-800/30'
+              ]"
+            >
+              <component 
+                :is="appStatus.isAvailable ? Wifi : WifiOff" 
+                class="w-4 h-4" 
+              />
+              <span>{{ appStatus.isAvailable ? 'Online' : 'Offline Mode' }}</span>
+            </div>
+            
+            <router-link 
+              to="/gallery"
+              class="bg-mitchly-blue/10 hover:bg-mitchly-blue/20 text-mitchly-blue px-4 py-2 rounded-lg transition-all border border-mitchly-blue/30 flex items-center gap-2"
+            >
+              <Music4 class="w-5 h-5" />
+              Gallery
+            </router-link>
+          </div>
         </div>
-        <router-link 
-          to="/gallery"
-          class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <Music4 class="w-5 h-5" />
-          Gallery
-        </router-link>
       </div>
     </header>
 
@@ -28,13 +51,13 @@
       <!-- Current Band Profile -->
       <div v-if="currentBandProfile" class="mt-8">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-bold text-gray-800">Current Band Profile</h2>
+          <h2 class="text-2xl font-bold text-white">Current Band Profile</h2>
           <div class="flex gap-2">
             <button
               v-if="!savedBandId"
               @click="saveBand"
               :disabled="saving"
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+              class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <Save class="w-4 h-4" />
               {{ saving ? 'Saving...' : 'Save Band' }}
@@ -42,7 +65,7 @@
             <button
               v-if="savedBandId"
               @click="viewBand"
-              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               <ExternalLink class="w-4 h-4" />
               View Page
@@ -50,7 +73,7 @@
             <button
               v-if="savedBandId"
               @click="copyBandLink"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              class="bg-mitchly-gray hover:bg-mitchly-light-gray text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-gray-700"
             >
               <Copy class="w-4 h-4" />
               Copy Link
@@ -59,19 +82,19 @@
         </div>
 
         <!-- Band Saved Success Message -->
-        <div v-if="savedBandId && showSaveSuccess" class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+        <div v-if="savedBandId && showSaveSuccess" class="mb-4 bg-mitchly-blue/10 border border-mitchly-blue/30 rounded-lg p-4">
           <div class="flex items-start gap-3">
-            <CheckCircle class="w-5 h-5 text-green-600 mt-0.5" />
+            <CheckCircle class="w-5 h-5 text-mitchly-blue mt-0.5" />
             <div class="flex-1">
-              <p class="font-semibold text-green-800">Band Saved Successfully!</p>
-              <p class="text-sm text-green-700 mt-1">Your band is now live and shareable. Copy the link below to access it later:</p>
+              <p class="font-semibold text-mitchly-blue">Band Saved Successfully!</p>
+              <p class="text-sm text-gray-300 mt-1">Your band is now live and shareable. Copy the link below to access it later:</p>
               <div class="flex items-center gap-2 mt-2">
-                <div class="flex-1 bg-white rounded border border-green-300 px-3 py-1.5 text-sm text-gray-700 font-mono truncate">
+                <div class="flex-1 bg-mitchly-gray rounded border border-gray-700 px-3 py-1.5 text-sm text-gray-400 font-mono truncate">
                   {{ getBandUrl() }}
                 </div>
                 <button
                   @click="copyBandLink"
-                  class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm transition-colors flex items-center gap-1"
+                  class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-3 py-1.5 rounded text-sm transition-colors flex items-center gap-1"
                 >
                   <Copy class="w-3 h-3" />
                   Copy
@@ -100,21 +123,21 @@
 
       <!-- Recent Bands -->
       <div v-if="recentBands.length > 0" class="mt-12">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Recent Bands</h2>
+        <h2 class="text-2xl font-bold text-white mb-4">Recent Bands</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div
             v-for="band in recentBands"
             :key="band.$id"
-            class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer"
+            class="bg-mitchly-gray rounded-lg border border-gray-800 p-4 hover:bg-mitchly-light-gray hover:border-mitchly-blue/30 transition-all cursor-pointer"
             @click="loadBand(band)"
           >
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div class="w-12 h-12 bg-gradient-to-br from-mitchly-blue to-mitchly-purple rounded-full flex items-center justify-center">
                 <Music class="w-6 h-6 text-white" />
               </div>
               <div class="flex-1">
-                <h3 class="font-semibold text-gray-800">{{ band.bandName }}</h3>
-                <p class="text-sm text-gray-600">{{ band.primaryGenre }}</p>
+                <h3 class="font-semibold text-white">{{ band.bandName }}</h3>
+                <p class="text-sm text-gray-400">{{ band.primaryGenre }}</p>
               </div>
             </div>
             <div class="mt-3 flex justify-between items-center">
@@ -123,7 +146,7 @@
               </span>
               <router-link
                 :to="`/band/${band.$id}`"
-                class="text-purple-600 hover:text-purple-700 text-sm"
+                class="text-mitchly-blue hover:text-mitchly-blue/80 text-sm"
                 @click.stop
               >
                 View →
@@ -141,13 +164,13 @@
           v-for="toast in toasts"
           :key="toast.id"
           :class="`toast ${toast.type}`"
-          class="bg-white rounded-lg shadow-lg p-4 min-w-[300px]"
+          class="bg-mitchly-gray border border-gray-700 rounded-lg shadow-lg p-4 min-w-[300px]"
         >
           <div class="flex items-center gap-3">
             <component :is="getToastIcon(toast.type)" class="w-5 h-5" />
             <div class="flex-1">
-              <p class="font-semibold">{{ toast.title }}</p>
-              <p class="text-sm text-gray-600">{{ toast.message }}</p>
+              <p class="font-semibold text-white">{{ toast.title }}</p>
+              <p class="text-sm text-gray-400">{{ toast.message }}</p>
             </div>
           </div>
         </div>
@@ -163,7 +186,7 @@ import ConceptInput from '../components/ConceptInput.vue';
 import BandProfile from '../components/BandProfile.vue';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import { generateBandProfile, generateSong } from '../services/anthropic';
-import { bandService, songService } from '../services/appwrite';
+import { bandService, songService, getAppwriteStatus } from '../services/appwrite';
 import { murekaService } from '../services/mureka';
 import { 
   Music, 
@@ -175,7 +198,9 @@ import {
   AlertCircle,
   Loader,
   Copy,
-  Link
+  Link,
+  WifiOff,
+  Wifi
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -191,14 +216,39 @@ const audioTracks = ref([]);
 const audioGenerationStatus = ref({});
 const toasts = ref([]);
 const showSaveSuccess = ref(false);
+const appStatus = ref({ isAvailable: true, mode: 'online' });
 
 // Load recent bands on mount
 onMounted(async () => {
+  // Check app status
+  appStatus.value = getAppwriteStatus();
+  
   try {
     recentBands.value = await bandService.list(6);
+    // Update status after successful load
+    appStatus.value = getAppwriteStatus();
   } catch (error) {
     console.error('Error loading recent bands:', error);
+    appStatus.value = getAppwriteStatus();
+    
+    // Show offline mode notification if Appwrite is unavailable
+    if (!appStatus.value.isAvailable) {
+      showToast('info', 'Offline Mode', 'Database unavailable - your data will be saved locally');
+    }
   }
+  
+  // Check status periodically
+  setInterval(() => {
+    const newStatus = getAppwriteStatus();
+    if (newStatus.isAvailable !== appStatus.value.isAvailable) {
+      appStatus.value = newStatus;
+      if (newStatus.isAvailable) {
+        showToast('success', 'Back Online', 'Database connection restored');
+      } else {
+        showToast('info', 'Offline Mode', 'Database unavailable - data will be saved locally');
+      }
+    }
+  }, 30000); // Check every 30 seconds
 });
 
 // Handlers
@@ -454,7 +504,7 @@ const getToastIcon = (type) => {
 }
 
 .toast.success {
-  border-left: 4px solid #10b981;
+  border-left: 4px solid #00E4FF;
 }
 
 .toast.error {
@@ -466,6 +516,6 @@ const getToastIcon = (type) => {
 }
 
 .toast.info {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #8B5CF6;
 }
 </style>

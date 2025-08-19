@@ -7,10 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        'mitchly-blue': '#3B82F6',
-        'mitchly-purple': '#8B5CF6',
-        'mitchly-dark': '#1F2937',
-        'mitchly-darker': '#111827'
+        'mitchly-blue': '#00E4FF',  // Electric blue primary
+        'mitchly-purple': '#8B5CF6', // Purple secondary accent
+        'mitchly-dark': '#0F0F0F',   // Dark background (Spotify-like)
+        'mitchly-darker': '#000000', // Pure black
+        'mitchly-gray': '#181818',   // Dark gray for cards
+        'mitchly-light-gray': '#282828' // Lighter gray for hover states
       },
       fontFamily: {
         'sans': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif']

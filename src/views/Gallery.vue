@@ -1,16 +1,19 @@
 <template>
-  <div class="gallery min-h-screen bg-gray-50">
+  <div class="gallery min-h-screen bg-mitchly-dark">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6 shadow-lg">
-      <div class="container mx-auto">
+    <header class="bg-mitchly-darker border-b border-mitchly-gray">
+      <div class="container mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold">Band Gallery</h1>
-            <p class="text-purple-100 mt-1">Explore AI-generated bands from the community</p>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+              <span class="text-mitchly-blue">🎸</span>
+              Band Gallery
+            </h1>
+            <p class="text-gray-400 mt-1">Explore AI-generated bands from the community</p>
           </div>
           <router-link 
             to="/"
-            class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            class="bg-mitchly-blue/10 hover:bg-mitchly-blue/20 text-mitchly-blue px-4 py-2 rounded-lg transition-all border border-mitchly-blue/30 flex items-center gap-2"
           >
             <Home class="w-5 h-5" />
             Create Band
@@ -23,46 +26,46 @@
     <div class="container mx-auto p-6">
       <!-- Stats Section -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">Total Bands</p>
-              <p class="text-2xl font-bold text-gray-800">{{ stats.totalBands }}</p>
+              <p class="text-sm text-gray-400">Total Bands</p>
+              <p class="text-2xl font-bold text-white">{{ stats.totalBands }}</p>
             </div>
-            <Users class="w-8 h-8 text-purple-500" />
+            <Users class="w-8 h-8 text-mitchly-purple" />
           </div>
         </div>
-        <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">Total Songs</p>
-              <p class="text-2xl font-bold text-gray-800">{{ stats.totalSongs }}</p>
+              <p class="text-sm text-gray-400">Total Songs</p>
+              <p class="text-2xl font-bold text-white">{{ stats.totalSongs }}</p>
             </div>
-            <Music class="w-8 h-8 text-pink-500" />
+            <Music class="w-8 h-8 text-mitchly-blue" />
           </div>
         </div>
-        <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">With Audio</p>
-              <p class="text-2xl font-bold text-gray-800">{{ stats.songsWithAudio }}</p>
+              <p class="text-sm text-gray-400">With Audio</p>
+              <p class="text-2xl font-bold text-white">{{ stats.songsWithAudio }}</p>
             </div>
-            <PlayCircle class="w-8 h-8 text-green-500" />
+            <PlayCircle class="w-8 h-8 text-green-400" />
           </div>
         </div>
-        <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">Genres</p>
-              <p class="text-2xl font-bold text-gray-800">{{ stats.uniqueGenres }}</p>
+              <p class="text-sm text-gray-400">Genres</p>
+              <p class="text-2xl font-bold text-white">{{ stats.uniqueGenres }}</p>
             </div>
-            <Tag class="w-8 h-8 text-blue-500" />
+            <Tag class="w-8 h-8 text-mitchly-blue" />
           </div>
         </div>
       </div>
 
       <!-- Filter and Search -->
-      <div class="bg-white rounded-lg p-4 shadow-sm mb-6">
+      <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800 mb-6">
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <div class="relative">
@@ -71,14 +74,14 @@
                 v-model="searchQuery"
                 type="text"
                 placeholder="Search bands by name..."
-                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                class="w-full pl-10 pr-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white placeholder-gray-500"
               >
             </div>
           </div>
           <div class="flex gap-2">
             <select
               v-model="filterGenre"
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              class="px-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white"
             >
               <option value="">All Genres</option>
               <option v-for="genre in availableGenres" :key="genre" :value="genre">
@@ -87,7 +90,7 @@
             </select>
             <select
               v-model="sortBy"
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              class="px-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -101,19 +104,19 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
         <div class="text-center">
-          <Loader class="w-12 h-12 text-purple-600 animate-spin mx-auto" />
-          <p class="mt-4 text-gray-600">Loading bands...</p>
+          <Loader class="w-12 h-12 text-mitchly-blue animate-spin mx-auto" />
+          <p class="mt-4 text-gray-400">Loading bands...</p>
         </div>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredBands.length === 0 && !searchQuery && !filterGenre" class="text-center py-12">
-        <Music2 class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">No bands in the gallery yet</h3>
-        <p class="text-gray-600 mb-6">Be the first to create an AI-generated band!</p>
+        <Music2 class="w-16 h-16 text-gray-500 mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-white mb-2">No bands in the gallery yet</h3>
+        <p class="text-gray-400 mb-6">Be the first to create an AI-generated band!</p>
         <router-link
           to="/"
-          class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors"
+          class="inline-flex items-center gap-2 bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           <Plus class="w-5 h-5" />
           Create the First Band
@@ -122,9 +125,9 @@
 
       <!-- No Results State -->
       <div v-else-if="filteredBands.length === 0" class="text-center py-12">
-        <Search class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">No bands found</h3>
-        <p class="text-gray-600">Try adjusting your search or filters</p>
+        <Search class="w-16 h-16 text-gray-500 mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-white mb-2">No bands found</h3>
+        <p class="text-gray-400">Try adjusting your search or filters</p>
       </div>
 
       <!-- Bands Grid -->
@@ -132,10 +135,10 @@
         <div
           v-for="band in filteredBands"
           :key="band.$id"
-          class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
+          class="bg-mitchly-gray rounded-lg border border-gray-800 hover:border-mitchly-blue/30 transition-all duration-300 overflow-hidden group"
         >
           <!-- Band Header with Gradient -->
-          <div class="relative h-32 bg-gradient-to-br from-pink-500 to-purple-600 overflow-hidden">
+          <div class="relative h-32 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
             <div class="absolute inset-0 opacity-10">
               <div class="absolute inset-0 bg-white/10"></div>
             </div>
@@ -150,8 +153,8 @@
 
           <!-- Band Info -->
           <div class="p-4">
-            <h3 class="font-bold text-lg text-gray-800 mb-1">{{ band.bandName }}</h3>
-            <p class="text-sm text-gray-600 mb-3">{{ band.primaryGenre }}</p>
+            <h3 class="font-bold text-lg text-white mb-1">{{ band.bandName }}</h3>
+            <p class="text-sm text-gray-400 mb-3">{{ band.primaryGenre }}</p>
             
             <!-- Meta Info -->
             <div class="flex items-center gap-4 text-xs text-gray-500 mb-4">
@@ -169,29 +172,29 @@
             <div class="flex gap-2">
               <router-link
                 :to="`/band/${band.$id}`"
-                class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 rounded-lg transition-colors text-sm"
+                class="flex-1 bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold text-center py-2 rounded-lg transition-colors text-sm"
               >
                 View Band
               </router-link>
               <button
                 @click="shareBand(band)"
-                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                class="px-3 py-2 bg-mitchly-dark hover:bg-mitchly-light-gray rounded-lg transition-colors border border-gray-700"
                 title="Share"
               >
-                <Share2 class="w-4 h-4 text-gray-600" />
+                <Share2 class="w-4 h-4 text-gray-400" />
               </button>
               <button
                 @click="confirmDelete(band)"
-                class="px-3 py-2 bg-gray-100 hover:bg-red-100 rounded-lg transition-colors group/delete"
+                class="px-3 py-2 bg-mitchly-dark hover:bg-red-900/20 rounded-lg transition-colors group/delete border border-gray-700"
                 title="Delete"
               >
-                <Trash2 class="w-4 h-4 text-gray-600 group-hover/delete:text-red-600" />
+                <Trash2 class="w-4 h-4 text-gray-400 group-hover/delete:text-red-400" />
               </button>
             </div>
           </div>
 
           <!-- Creation Date -->
-          <div class="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t">
+          <div class="px-4 py-2 bg-mitchly-darker text-xs text-gray-500 border-t border-gray-800">
             Created {{ formatDate(band.$createdAt) }}
           </div>
         </div>
@@ -201,7 +204,7 @@
       <div v-if="hasMore && !loading" class="text-center mt-8">
         <button
           @click="loadMore"
-          class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors"
+          class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           Load More Bands
         </button>
@@ -215,7 +218,7 @@
       @click="deleteModal.show = false"
     >
       <div
-        class="bg-white rounded-lg max-w-md w-full p-6"
+        class="bg-mitchly-gray rounded-lg max-w-md w-full p-6 border border-gray-800"
         @click.stop
       >
         <div class="flex items-center gap-3 mb-4">
@@ -223,12 +226,12 @@
             <AlertTriangle class="w-6 h-6 text-red-600" />
           </div>
           <div>
-            <h3 class="text-lg font-bold text-gray-800">Delete Band?</h3>
-            <p class="text-sm text-gray-600">This action cannot be undone</p>
+            <h3 class="text-lg font-bold text-white">Delete Band?</h3>
+            <p class="text-sm text-gray-400">This action cannot be undone</p>
           </div>
         </div>
         
-        <p class="text-gray-700 mb-6">
+        <p class="text-gray-300 mb-6">
           Are you sure you want to delete <strong>{{ deleteModal.band?.bandName }}</strong>? 
           This will permanently remove the band and all associated songs.
         </p>
@@ -236,7 +239,7 @@
         <div class="flex gap-3">
           <button
             @click="deleteModal.show = false"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            class="flex-1 px-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg hover:bg-mitchly-light-gray transition-colors text-white"
           >
             Cancel
           </button>
