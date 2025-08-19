@@ -304,6 +304,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
+import { storageService } from '../services/storage';
 import { generateSong } from '../services/anthropic';
 import { murekaService } from '../services/mureka';
 import { falAIService } from '../services/falai';
@@ -413,20 +414,34 @@ const handleGenerateSong = async (songTitle, trackNumber) => {
   generatingSongIndex.value = trackNumber - 1;
   
   try {
-    const song = await generateSong(songTitle, trackNumber, bandProfile.value);
+    const generatedSong = await generateSong(songTitle, trackNumber, bandProfile.value);
     
-    // Save to database
-    await songService.create({
-      bandId: band.value.$id,
-      title: songTitle,
-      trackNumber,
-      lyrics: song.lyrics,
-      description: song.songDescription,
-      artistDescription: song.artistDescription,
-      status: 'completed'
-    });
+    // Check if song already exists (placeholder created during band creation)
+    const existingSong = songs.value.find(s => s.title === songTitle);
     
-    // Reload songs
+    if (existingSong && existingSong.$id) {
+      // Update existing song with generated content
+      await songService.update(existingSong.$id, {
+        lyrics: generatedSong.lyrics,
+        description: generatedSong.songDescription,
+        artistDescription: generatedSong.artistDescription,
+        status: 'completed'
+      });
+    } else {
+      // Create new song if it doesn't exist
+      await songService.create({
+        bandId: band.value.$id,
+        title: songTitle,
+        trackNumber,
+        lyrics: generatedSong.lyrics,
+        description: generatedSong.songDescription,
+        artistDescription: generatedSong.artistDescription,
+        status: 'completed',
+        audioUrl: ''
+      });
+    }
+    
+    // Reload songs to get updated data
     songs.value = await songService.getByBandId(band.value.$id);
     
     // Show success
@@ -484,19 +499,25 @@ const generateBandImages = async () => {
   generatingImages.value = true;
   
   try {
+    // Generate images with fal.ai
     const images = await falAIService.generateAllBandImages(bandProfile.value);
-    bandImages.value = images;
     
-    // Save images to band profile if successful
     if (images.logo || images.albumCover || images.bandPhoto) {
+      // Upload images to Appwrite Storage and get permanent URLs
+      const uploadedImages = await storageService.uploadBandImages(band.value.$id, images);
+      
+      // Update local state with uploaded URLs
+      bandImages.value = uploadedImages;
+      
+      // Update band document with permanent image URLs
       await bandService.update(band.value.$id, {
-        images: {
-          logo: images.logo,
-          albumCover: images.albumCover,
-          bandPhoto: images.bandPhoto
-        }
+        logoUrl: uploadedImages.logoUrl || '',
+        albumCoverUrl: uploadedImages.albumCoverUrl || '',
+        bandPhotoUrl: uploadedImages.bandPhotoUrl || '',
+        images: uploadedImages // Store all URLs in a JSON field
       });
-      alert('Visual assets generated successfully!');
+      
+      alert('Visual assets generated and saved successfully!');
     } else {
       alert('Image generation requires Fal.ai API key configuration');
     }

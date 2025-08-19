@@ -133,30 +133,56 @@ export const bandService = {
       // Check if Appwrite is available
       await checkAppwriteAvailability();
       
+      const bandData = {
+        bandName: bandProfile.bandName,
+        primaryGenre: bandProfile.primaryGenre,
+        profileData: JSON.stringify(bandProfile),
+        albumTitle: bandProfile.albumConcept?.title || '',
+        albumDescription: bandProfile.albumConcept?.description || '',
+        trackCount: bandProfile.trackListing?.length || 0,
+        formationYear: bandProfile.formationYear || '',
+        origin: bandProfile.origin || '',
+        // Media URLs - will be updated when images/audio are generated
+        logoUrl: bandProfile.logoUrl || '',
+        albumCoverUrl: bandProfile.albumCoverUrl || '',
+        bandPhotoUrl: bandProfile.bandPhotoUrl || '',
+        imageUrl: bandProfile.imageUrl || null
+      };
+      
       if (isAppwriteAvailable) {
         const document = await databases.createDocument(
           DATABASE_ID,
           BANDS_COLLECTION,
           ID.unique(),
-          {
-            bandName: bandProfile.bandName,
-            primaryGenre: bandProfile.primaryGenre,
-            profileData: JSON.stringify(bandProfile),
-            imageUrl: bandProfile.imageUrl || null,
-            logoUrl: bandProfile.logoUrl || null
-          }
+          bandData
         );
+        
+        // Automatically create placeholder song documents for each track
+        if (bandProfile.trackListing && bandProfile.trackListing.length > 0) {
+          console.log('Creating song placeholders for', bandProfile.trackListing.length, 'tracks');
+          for (let i = 0; i < bandProfile.trackListing.length; i++) {
+            try {
+              await songService.create({
+                bandId: document.$id,
+                title: bandProfile.trackListing[i],
+                trackNumber: i + 1,
+                lyrics: '',
+                description: '',
+                artistDescription: bandProfile.aiDescription || '',
+                status: 'pending',
+                audioUrl: ''
+              });
+            } catch (songError) {
+              console.error('Error creating song placeholder:', songError);
+            }
+          }
+        }
+        
         return document;
       } else {
         // Use localStorage fallback
         console.info('Using localStorage fallback for band creation');
-        const localBand = localStorageFallback.bands.create({
-          bandName: bandProfile.bandName,
-          primaryGenre: bandProfile.primaryGenre,
-          profileData: JSON.stringify(bandProfile),
-          imageUrl: bandProfile.imageUrl || null,
-          logoUrl: bandProfile.logoUrl || null
-        });
+        const localBand = localStorageFallback.bands.create(bandData);
         return localBand;
       }
     } catch (error) {
@@ -168,6 +194,9 @@ export const bandService = {
           bandName: bandProfile.bandName,
           primaryGenre: bandProfile.primaryGenre,
           profileData: JSON.stringify(bandProfile),
+          albumTitle: bandProfile.albumConcept?.title || '',
+          albumDescription: bandProfile.albumConcept?.description || '',
+          trackCount: bandProfile.trackListing?.length || 0,
           imageUrl: bandProfile.imageUrl || null,
           logoUrl: bandProfile.logoUrl || null
         });
