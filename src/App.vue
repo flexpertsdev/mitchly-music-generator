@@ -8,9 +8,9 @@
           <!-- Logo -->
           <div class="mb-6 sm:mb-8 flex justify-center">
             <img 
-              src="https://i.ibb.co/4wDPmb8X/Whats-App-Image-2025-06-21-at-17-25-06-2.jpg" 
+              src="/logo.jpg" 
               alt="Mitchly Logo" 
-              class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg"
+              class="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl shadow-2xl ring-2 ring-white/10"
               style="border-radius: 22%;"
             />
           </div>
@@ -100,7 +100,16 @@ export default {
         currentStep.value = 'profile'
       } catch (error) {
         console.error('Generation error:', error)
-        alert('Failed to generate band profile: ' + error.message)
+        const errorMessage = error.message || 'An unexpected error occurred';
+        
+        // Show more user-friendly error message
+        if (errorMessage.includes('API configuration')) {
+          alert('Configuration Error: The API keys are not properly configured. Please check that all required environment variables are set in Netlify.');
+        } else if (errorMessage.includes('500')) {
+          alert('Server Error: The service is temporarily unavailable. Please try again in a moment.');
+        } else {
+          alert('Failed to generate band profile: ' + errorMessage);
+        }
       } finally {
         isGenerating.value = false
       }

@@ -28,8 +28,21 @@ exports.handler = async (event, context) => {
     }
 
     // Use environment variable from Netlify (not exposed to client)
+    const apiKey = process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      console.error('Anthropic API key not found in environment variables');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'API configuration error. Please ensure VITE_ANTHROPIC_API_KEY is set in Netlify environment variables.' 
+        })
+      };
+    }
+    
     const anthropic = new Anthropic({
-      apiKey: process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY
+      apiKey: apiKey
     });
 
     const prompt = `You are an expert music producer, songwriter, and band conceptualist. Create a comprehensive band profile and album concept based on this description: "${conceptText}"
