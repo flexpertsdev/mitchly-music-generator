@@ -1,6 +1,8 @@
-import { storage, ID, appwriteConfig } from './appwrite-config';
+import { storage, ID } from './appwrite';
 
 const BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID || 'mitchly-media';
+const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df';
 
 class StorageService {
   constructor() {
@@ -79,8 +81,7 @@ class StorageService {
    * Get public URL for a file
    */
   getFileUrl(fileId) {
-    const { endpoint, projectId } = appwriteConfig;
-    return `${endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/view?project=${projectId}`;
+    return `${APPWRITE_ENDPOINT}/storage/buckets/${this.bucketId}/files/${fileId}/view?project=${PROJECT_ID}`;
   }
 
   /**

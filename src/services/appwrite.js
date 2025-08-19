@@ -12,6 +12,7 @@ const client = new Client()
 // Initialize services
 export const databases = new Databases(client);
 export const storage = new Storage(client);
+export { ID };
 
 // Database and collection IDs
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'mitchly-music-db';
