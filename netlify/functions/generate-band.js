@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+const Anthropic = require('@anthropic-ai/sdk');
 
 exports.handler = async (event, context) => {
   // Only allow POST requests
@@ -98,8 +98,9 @@ Respond ONLY with valid JSON in this exact format:
 }`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4000,
+      temperature: 0.7,
       messages: [
         {
           role: 'user',
