@@ -113,10 +113,14 @@
                   {{ song.trackNumber }}. {{ song.title }}
                 </h3>
                 <p class="text-gray-400 text-sm mt-1">
-                  {{ song.generated ? 'Ready for Mureka.ai' : 'Not generated yet' }}
+                  <span v-if="!song.generated">Not generated yet</span>
+                  <span v-else-if="song.audioStatus === 'completed'">Audio ready</span>
+                  <span v-else-if="song.audioStatus === 'processing'">Generating audio...</span>
+                  <span v-else-if="song.audioStatus === 'failed'">Audio generation failed</span>
+                  <span v-else>Ready for audio generation</span>
                 </p>
               </div>
-              <div class="flex space-x-2">
+              <div class="flex flex-wrap gap-2">
                 <button
                   v-if="!song.generated"
                   @click="$emit('generateSong', index)"
@@ -127,14 +131,32 @@
                   <div v-else class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Song' }}</span>
                 </button>
-                <button
-                  v-else
-                  @click="copySongForMureka(song)"
-                  class="bg-mitchly-blue px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm transition-colors"
-                >
-                  <Copy class="w-4 h-4" />
-                  <span>Copy for Mureka.ai</span>
-                </button>
+                <template v-else>
+                  <button
+                    v-if="!song.audioStatus || song.audioStatus === 'failed'"
+                    @click="$emit('generateAudio', index)"
+                    :disabled="song.audioStatus === 'processing'"
+                    class="bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2 text-sm transition-colors"
+                  >
+                    <Music class="w-4 h-4" />
+                    <span>Generate Audio</span>
+                  </button>
+                  <button
+                    v-if="song.audioStatus === 'processing'"
+                    disabled
+                    class="bg-gray-600 px-4 py-2 rounded-lg opacity-50 flex items-center space-x-2 text-sm"
+                  >
+                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>{{ song.audioProgress ? `${song.audioProgress}%` : 'Processing...' }}</span>
+                  </button>
+                  <button
+                    @click="copySongForMureka(song)"
+                    class="bg-mitchly-blue px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm transition-colors"
+                  >
+                    <Copy class="w-4 h-4" />
+                    <span>Copy for Mureka.ai</span>
+                  </button>
+                </template>
               </div>
             </div>
             
@@ -164,6 +186,14 @@
                   <pre class="text-sm text-gray-300 whitespace-pre-wrap font-mono">{{ song.lyrics }}</pre>
                 </div>
               </details>
+              
+              <!-- Audio Player -->
+              <AudioPlayer
+                v-if="song.audioUrl"
+                :audioUrl="song.audioUrl"
+                :title="`${song.trackNumber}. ${song.title}`"
+                class="mt-4"
+              />
             </div>
           </div>
         </div>
@@ -201,7 +231,8 @@
 </template>
 
 <script>
-import { Copy, Zap, FileText, Download } from 'lucide-vue-next'
+import { Copy, Zap, FileText, Download, Music } from 'lucide-vue-next'
+import AudioPlayer from './AudioPlayer.vue'
 
 export default {
   name: 'BandProfile',
@@ -209,7 +240,9 @@ export default {
     Copy,
     Zap,
     FileText,
-    Download
+    Download,
+    Music,
+    AudioPlayer
   },
   props: {
     profile: {
@@ -225,7 +258,7 @@ export default {
       default: null
     }
   },
-  emits: ['generateSong', 'startOver'],
+  emits: ['generateSong', 'generateAudio', 'startOver'],
   methods: {
     copyBandProfile() {
       const profileText = this.formatBandProfile(this.profile)

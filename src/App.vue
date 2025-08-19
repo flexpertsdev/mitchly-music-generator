@@ -46,6 +46,7 @@
         :profile="bandProfile"
         :songs="generatedSongs"
         @generateSong="handleGenerateSong"
+        @generateAudio="handleGenerateAudio"
         @startOver="handleStartOver"
         :generatingSongIndex="generatingSongIndex"
       />
@@ -65,6 +66,8 @@ import { ref } from 'vue'
 import ConceptInput from './components/ConceptInput.vue'
 import BandProfile from './components/BandProfile.vue'
 import { generateBandProfile, generateSong } from './services/anthropic.js'
+import { generateAudio, pollAudioGeneration } from './services/mureka.js'
+// import { songService, storageService } from './services/appwrite.js' // Uncomment when Appwrite is configured
 
 export default {
   name: 'App',
@@ -93,7 +96,11 @@ export default {
           artistDescription: profile.aiDescription,
           songDescription: "",
           lyrics: "",
-          generated: false
+          generated: false,
+          audioStatus: null,
+          audioProgress: null,
+          audioUrl: null,
+          murekaTaskId: null
         }))
         
         generatedSongs.value = songs
@@ -138,6 +145,75 @@ export default {
       }
     }
 
+    const handleGenerateAudio = async (songIndex) => {
+      const song = generatedSongs.value[songIndex]
+      
+      if (!song.generated) {
+        alert('Please generate the song lyrics first')
+        return
+      }
+      
+      try {
+        // Update status to processing
+        generatedSongs.value[songIndex] = {
+          ...song,
+          audioStatus: 'processing',
+          audioProgress: 0
+        }
+        
+        // Start audio generation
+        const { taskId } = await generateAudio(
+          song.title,
+          song.songDescription,
+          song.lyrics
+        )
+        
+        // Save task ID
+        generatedSongs.value[songIndex].murekaTaskId = taskId
+        
+        // Poll for completion
+        const result = await pollAudioGeneration(taskId, (status) => {
+          // Update progress
+          if (status.progress) {
+            generatedSongs.value[songIndex].audioProgress = status.progress
+          }
+        })
+        
+        if (result.audioUrl) {
+          // For now, use the Mureka URL directly
+          // In production with proper Appwrite setup, you would store it there
+          generatedSongs.value[songIndex] = {
+            ...generatedSongs.value[songIndex],
+            audioStatus: 'completed',
+            audioUrl: result.audioUrl,
+            audioProgress: 100
+          }
+          
+          // Optional: Try to save to Appwrite storage if available
+          // Commented out until Appwrite storage buckets are configured
+          /*
+          try {
+            const audioResponse = await fetch(result.audioUrl)
+            const audioBlob = await audioResponse.blob()
+            const audioFile = new File([audioBlob], `${song.title}.mp3`, { type: 'audio/mpeg' })
+            const storedUrl = await storageService.uploadAudio(audioFile)
+            generatedSongs.value[songIndex].audioUrl = storedUrl
+          } catch (storageError) {
+            console.warn('Could not store audio in Appwrite:', storageError)
+          }
+          */
+        }
+      } catch (error) {
+        console.error('Audio generation error:', error)
+        generatedSongs.value[songIndex] = {
+          ...generatedSongs.value[songIndex],
+          audioStatus: 'failed',
+          audioProgress: null
+        }
+        alert('Failed to generate audio: ' + error.message)
+      }
+    }
+
     const handleStartOver = () => {
       currentStep.value = 'concept'
       bandProfile.value = null
@@ -153,6 +229,7 @@ export default {
       generatedSongs,
       handleGenerate,
       handleGenerateSong,
+      handleGenerateAudio,
       handleStartOver
     }
   }

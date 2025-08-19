@@ -10,8 +10,23 @@ export async function generateBandProfile(conceptText) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to generate band profile');
+      let errorMessage;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const error = await response.json();
+          errorMessage = error.error || `Server error: ${response.status}`;
+        } catch (e) {
+          // If JSON parsing fails, get text
+          errorMessage = await response.text();
+        }
+      } else {
+        // Non-JSON response (like timeout errors)
+        errorMessage = await response.text();
+      }
+      
+      throw new Error(errorMessage || 'Failed to generate band profile');
     }
 
     return await response.json();
@@ -32,8 +47,23 @@ export async function generateSong(songTitle, trackNumber, bandProfile) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to generate song');
+      let errorMessage;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const error = await response.json();
+          errorMessage = error.error || `Server error: ${response.status}`;
+        } catch (e) {
+          // If JSON parsing fails, get text
+          errorMessage = await response.text();
+        }
+      } else {
+        // Non-JSON response (like timeout errors)
+        errorMessage = await response.text();
+      }
+      
+      throw new Error(errorMessage || 'Failed to generate song');
     }
 
     return await response.json();

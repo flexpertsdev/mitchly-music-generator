@@ -135,13 +135,13 @@ Respond ONLY with valid JSON in this exact format:
 
     await sendToWebhook({
       stage: 'sending_to_anthropic',
-      model: 'claude-opus-4-1',
+      model: 'claude-3-5-sonnet-20241022',
       prompt_length: prompt.length
     });
 
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-1',
-      max_tokens: 4000,
+      model: 'claude-3-5-sonnet-20241022',  // Using Sonnet for faster responses
+      max_tokens: 3000,  // Reduced for faster generation
       temperature: 0.7,
       messages: [
         {

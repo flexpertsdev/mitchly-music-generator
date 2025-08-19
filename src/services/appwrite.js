@@ -5,10 +5,9 @@ const client = new Client()
   .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
   .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df');
 
-// Add API key if provided (for server-side permissions)
-if (import.meta.env.VITE_APPWRITE_API_KEY) {
-  client.setKey(import.meta.env.VITE_APPWRITE_API_KEY);
-}
+// Note: In browser environments, we typically use session-based auth
+// API keys should only be used in server-side environments
+// For now, we'll use anonymous access or session-based auth
 
 // Initialize services
 export const databases = new Databases(client);
@@ -168,11 +167,15 @@ export const storageService = {
         ID.unique(),
         file
       );
-      // Get the file URL
+      // Get the file URL for viewing
       const fileUrl = storage.getFileView(bucketId, response.$id);
-      return fileUrl.href;
+      return fileUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
+      // If bucket doesn't exist, provide helpful error
+      if (error.code === 404) {
+        throw new Error('Storage bucket "band-images" not found. Please create it in Appwrite console.');
+      }
       throw error;
     }
   },
@@ -184,16 +187,20 @@ export const storageService = {
         ID.unique(),
         file
       );
-      // Get the file URL
+      // Get the file URL for viewing
       const fileUrl = storage.getFileView('audio-files', response.$id);
-      return fileUrl.href;
+      return fileUrl;
     } catch (error) {
       console.error('Error uploading audio:', error);
+      // If bucket doesn't exist, provide helpful error
+      if (error.code === 404) {
+        throw new Error('Storage bucket "audio-files" not found. Please create it in Appwrite console.');
+      }
       throw error;
     }
   },
 
   getFileUrl(bucketId, fileId) {
-    return storage.getFileView(bucketId, fileId).href;
+    return storage.getFileView(bucketId, fileId);
   }
 };

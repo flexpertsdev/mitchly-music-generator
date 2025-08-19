@@ -1,6 +1,6 @@
 exports.handler = async (event, context) => {
-  // Only allow GET requests
-  if (event.httpMethod !== 'GET') {
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
       body: JSON.stringify({ error: 'Method not allowed' })
@@ -15,7 +15,7 @@ exports.handler = async (event, context) => {
   };
 
   try {
-    const taskId = event.queryStringParameters?.taskId;
+    const { taskId } = JSON.parse(event.body);
 
     if (!taskId) {
       return {
@@ -36,8 +36,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Query the task status
-    const statusResponse = await fetch(`https://api.mureka.ai/v1/song/query/${taskId}`, {
+    // Check the status of the task
+    const statusResponse = await fetch(`https://api.mureka.ai/v1/song/tasks/${taskId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${MUREKA_API_KEY}`
@@ -57,38 +57,36 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const taskData = await statusResponse.json();
+    const task = await statusResponse.json();
 
-    // Extract relevant information
-    const response = {
-      taskId: taskData.id,
-      status: taskData.status,
-      createdAt: taskData.created_at,
-      finishedAt: taskData.finished_at,
-      model: taskData.model,
-      failedReason: taskData.failed_reason
-    };
+    // Map task status to our format
+    let status = 'pending';
+    let progress = 0;
+    let audioUrl = null;
+    let error = null;
 
-    // If succeeded, include the audio URLs
-    if (taskData.status === 'succeeded' && taskData.choices && taskData.choices.length > 0) {
-      response.songs = taskData.choices.map(choice => ({
-        id: choice.id,
-        title: choice.title,
-        audioUrl: choice.audio_url,
-        duration: choice.duration,
-        imageUrl: choice.image_url
-      }));
-    }
-
-    // If streaming, include stream URL
-    if (taskData.status === 'streaming' && taskData.stream_url) {
-      response.streamUrl = taskData.stream_url;
+    if (task.status === 'completed' || task.status === 'success') {
+      status = 'completed';
+      progress = 100;
+      audioUrl = task.audio_url || task.result?.audio_url || task.output?.audio_url;
+    } else if (task.status === 'failed' || task.status === 'error') {
+      status = 'failed';
+      error = task.error || 'Audio generation failed';
+    } else if (task.status === 'processing' || task.status === 'running') {
+      status = 'processing';
+      progress = task.progress || 50;
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(response)
+      body: JSON.stringify({
+        status,
+        progress,
+        audio_url: audioUrl,
+        error,
+        taskDetails: task // Include full task details for debugging
+      })
     };
   } catch (error) {
     console.error('Error checking audio status:', error);
