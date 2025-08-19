@@ -110,7 +110,18 @@ Respond ONLY with valid JSON in this exact format:
     });
 
     const content = response.content[0].text;
-    const bandProfile = JSON.parse(content);
+    
+    // Log the raw response for debugging
+    console.log('Raw API response:', content);
+    
+    // Try to parse the JSON response
+    let bandProfile;
+    try {
+      bandProfile = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse API response as JSON:', content);
+      throw new Error('Invalid response format from AI');
+    }
 
     return {
       statusCode: 200,

@@ -6,6 +6,11 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Function configuration
+[functions]
+  # Increase timeout to 26 seconds (max for free tier)
+  timeout = 26
+
 # Redirects for SPA
 [[redirects]]
   from = "/*"
