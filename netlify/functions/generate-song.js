@@ -89,12 +89,20 @@ Respond ONLY with valid JSON in this exact format:
     // Log the raw response for debugging
     console.log('Raw API response:', content);
     
+    // Clean up the response - remove markdown code blocks if present
+    let cleanContent = content;
+    if (content.includes('```json')) {
+      cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (content.includes('```')) {
+      cleanContent = content.replace(/```\n?/g, '');
+    }
+    
     // Try to parse the JSON response
     let song;
     try {
-      song = JSON.parse(content);
+      song = JSON.parse(cleanContent.trim());
     } catch (parseError) {
-      console.error('Failed to parse API response as JSON:', content);
+      console.error('Failed to parse API response as JSON:', cleanContent);
       throw new Error('Invalid response format from AI');
     }
 

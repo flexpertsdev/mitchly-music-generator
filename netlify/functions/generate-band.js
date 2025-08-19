@@ -1,5 +1,26 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
+// Optional: Set your webhook.site URL here for debugging
+const WEBHOOK_URL = process.env.WEBHOOK_URL || null; // Set in Netlify env vars
+
+async function sendToWebhook(data) {
+  if (!WEBHOOK_URL) return;
+  
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        function: 'generate-band',
+        ...data
+      })
+    });
+  } catch (err) {
+    console.error('Webhook error:', err);
+  }
+}
+
 exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -18,6 +39,12 @@ exports.handler = async (event, context) => {
 
   try {
     const { conceptText } = JSON.parse(event.body);
+    
+    // Log incoming request
+    await sendToWebhook({
+      stage: 'request_received',
+      conceptText: conceptText?.substring(0, 100) + '...'
+    });
 
     if (!conceptText) {
       return {
@@ -32,6 +59,10 @@ exports.handler = async (event, context) => {
     
     if (!apiKey) {
       console.error('Anthropic API key not found in environment variables');
+      await sendToWebhook({
+        stage: 'error',
+        error: 'API key not found'
+      });
       return {
         statusCode: 500,
         headers,
@@ -40,6 +71,11 @@ exports.handler = async (event, context) => {
         })
       };
     }
+    
+    await sendToWebhook({
+      stage: 'api_key_found',
+      key_prefix: apiKey.substring(0, 10) + '...'
+    });
     
     const anthropic = new Anthropic({
       apiKey: apiKey
@@ -97,6 +133,12 @@ Respond ONLY with valid JSON in this exact format:
   "productionStyle": "Production approach and sonic characteristics..."
 }`;
 
+    await sendToWebhook({
+      stage: 'sending_to_anthropic',
+      model: 'claude-opus-4-1',
+      prompt_length: prompt.length
+    });
+
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-1',
       max_tokens: 4000,
@@ -113,13 +155,35 @@ Respond ONLY with valid JSON in this exact format:
     
     // Log the raw response for debugging
     console.log('Raw API response:', content);
+    await sendToWebhook({
+      stage: 'api_response_received',
+      response_length: content.length,
+      response_preview: content.substring(0, 200)
+    });
+    
+    // Clean up the response - remove markdown code blocks if present
+    let cleanContent = content;
+    if (content.includes('```json')) {
+      cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (content.includes('```')) {
+      cleanContent = content.replace(/```\n?/g, '');
+    }
     
     // Try to parse the JSON response
     let bandProfile;
     try {
-      bandProfile = JSON.parse(content);
+      bandProfile = JSON.parse(cleanContent.trim());
+      await sendToWebhook({
+        stage: 'json_parsed',
+        band_name: bandProfile.bandName
+      });
     } catch (parseError) {
-      console.error('Failed to parse API response as JSON:', content);
+      console.error('Failed to parse API response as JSON:', cleanContent);
+      await sendToWebhook({
+        stage: 'parse_error',
+        error: parseError.message,
+        cleaned_content: cleanContent.substring(0, 500)
+      });
       throw new Error('Invalid response format from AI');
     }
 
