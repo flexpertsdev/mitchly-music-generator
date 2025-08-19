@@ -74,7 +74,7 @@ Respond ONLY with valid JSON in this exact format:
 }`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-1-20250805',
+      model: 'claude-opus-4-1',
       max_tokens: 3000,
       messages: [
         {
