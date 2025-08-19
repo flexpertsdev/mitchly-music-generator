@@ -100,3 +100,67 @@ export async function pollAudioGeneration(taskId, onProgress) {
     }, 5000); // Check every 5 seconds
   });
 }
+
+// Helper functions for Mureka integration
+function formatLyricsForMureka(lyrics) {
+  // Mureka expects clean lyrics without excessive line breaks
+  return lyrics
+    .split('\n')
+    .filter(line => line.trim())
+    .join('\n');
+}
+
+function generatePromptFromProfile(bandProfile) {
+  return `${bandProfile.primaryGenre} style, ${bandProfile.vocalStyle?.type || bandProfile.vocalStyle}. ${bandProfile.coreSound}`;
+}
+
+async function pollForCompletion(taskId, onProgress, maxAttempts = 60, interval = 5000) {
+  let attempts = 0;
+  
+  return new Promise((resolve, reject) => {
+    const checkInterval = setInterval(async () => {
+      attempts++;
+      
+      if (attempts > maxAttempts) {
+        clearInterval(checkInterval);
+        reject(new Error('Audio generation timed out'));
+        return;
+      }
+      
+      try {
+        const status = await checkAudioStatus(taskId);
+        
+        if (onProgress) {
+          onProgress(status);
+        }
+        
+        if (status.status === 'succeeded' && status.audioUrl) {
+          clearInterval(checkInterval);
+          resolve({
+            songs: [{
+              audioUrl: status.audioUrl,
+              duration: status.duration || null
+            }]
+          });
+        } else if (status.status === 'failed' || status.error) {
+          clearInterval(checkInterval);
+          reject(new Error(status.error || 'Audio generation failed'));
+        }
+        // Continue polling if status is 'pending' or 'processing'
+      } catch (error) {
+        clearInterval(checkInterval);
+        reject(error);
+      }
+    }, interval);
+  });
+}
+
+// Export as a service object
+export const murekaService = {
+  generateAudio,
+  checkAudioStatus,
+  pollAudioGeneration,
+  formatLyricsForMureka,
+  generatePromptFromProfile,
+  pollForCompletion
+};
