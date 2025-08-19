@@ -1,0 +1,151 @@
+<template>
+  <div class="min-h-screen bg-gray-900 text-white flex flex-col">
+    <!-- Main Content -->
+    <main class="flex-1">
+      <!-- Hero Section -->
+      <div class="px-4 py-8 sm:py-12 text-center">
+        <div class="max-w-4xl mx-auto">
+          <!-- Logo -->
+          <div class="mb-6 sm:mb-8 flex justify-center">
+            <img 
+              src="https://i.ibb.co/4wDPmb8X/Whats-App-Image-2025-06-21-at-17-25-06-2.jpg" 
+              alt="Mitchly Logo" 
+              class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-lg"
+              style="border-radius: 22%;"
+            />
+          </div>
+          
+          <!-- Title -->
+          <h1 class="hero-title font-bold mb-4 sm:mb-6 bg-gradient-to-r from-mitchly-blue to-mitchly-purple bg-clip-text text-transparent">
+            Music Generator
+          </h1>
+          
+          <!-- Tagline -->
+          <p class="text-lg sm:text-xl text-gray-300 mb-3 sm:mb-4">
+            Make More Than Just Music
+          </p>
+          
+          <!-- Description -->
+          <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-4">
+            Create comprehensive band profiles and AI-optimized song content for platforms like Mureka.ai. 
+            Generate complete albums with cohesive themes and copy-paste ready instructions.
+          </p>
+        </div>
+      </div>
+
+      <!-- Concept Input Section -->
+      <ConceptInput 
+        v-if="currentStep === 'concept'"
+        @generate="handleGenerate"
+        :isLoading="isGenerating"
+      />
+
+      <!-- Band Profile Section -->
+      <BandProfile 
+        v-if="currentStep === 'profile'"
+        :profile="bandProfile"
+        :songs="generatedSongs"
+        @generateSong="handleGenerateSong"
+        @startOver="handleStartOver"
+        :generatingSongIndex="generatingSongIndex"
+      />
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-gray-400 text-sm">
+      <div class="max-w-4xl mx-auto px-4">
+        © 2025 Mitchly. All rights reserved.
+      </div>
+    </footer>
+  </div>
+</template>
+
+<script>
+import { ref } from 'vue'
+import ConceptInput from './components/ConceptInput.vue'
+import BandProfile from './components/BandProfile.vue'
+import { generateBandProfile, generateSong } from './services/anthropic.js'
+
+export default {
+  name: 'App',
+  components: {
+    ConceptInput,
+    BandProfile
+  },
+  setup() {
+    const currentStep = ref('concept')
+    const isGenerating = ref(false)
+    const generatingSongIndex = ref(null)
+    const bandProfile = ref(null)
+    const generatedSongs = ref([])
+
+    const handleGenerate = async (conceptText) => {
+      isGenerating.value = true
+      
+      try {
+        const profile = await generateBandProfile(conceptText)
+        bandProfile.value = profile
+        
+        // Initialize songs array
+        const songs = profile.trackListing.map((title, index) => ({
+          trackNumber: index + 1,
+          title: title,
+          artistDescription: profile.aiDescription,
+          songDescription: "",
+          lyrics: "",
+          generated: false
+        }))
+        
+        generatedSongs.value = songs
+        currentStep.value = 'profile'
+      } catch (error) {
+        console.error('Generation error:', error)
+        alert('Failed to generate band profile: ' + error.message)
+      } finally {
+        isGenerating.value = false
+      }
+    }
+
+    const handleGenerateSong = async (songIndex) => {
+      generatingSongIndex.value = songIndex
+      
+      try {
+        const song = generatedSongs.value[songIndex]
+        const songData = await generateSong(song.title, song.trackNumber, bandProfile.value)
+        
+        const updatedSong = {
+          ...song,
+          songDescription: songData.songDescription,
+          lyrics: songData.lyrics,
+          generated: true
+        }
+        
+        generatedSongs.value[songIndex] = updatedSong
+      } catch (error) {
+        console.error('Song generation error:', error)
+        alert('Failed to generate song: ' + error.message)
+      } finally {
+        generatingSongIndex.value = null
+      }
+    }
+
+    const handleStartOver = () => {
+      currentStep.value = 'concept'
+      bandProfile.value = null
+      generatedSongs.value = []
+      generatingSongIndex.value = null
+    }
+
+    return {
+      currentStep,
+      isGenerating,
+      generatingSongIndex,
+      bandProfile,
+      generatedSongs,
+      handleGenerate,
+      handleGenerateSong,
+      handleStartOver
+    }
+  }
+}
+</script>

@@ -1,0 +1,315 @@
+<template>
+  <div class="px-4 pb-8">
+    <div class="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+      <!-- Band Profile Display -->
+      <div class="bg-gray-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-700 slide-up">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
+          <h2 class="text-2xl sm:text-3xl font-bold">{{ profile.bandName }} - Band Profile</h2>
+          <button
+            @click="copyBandProfile"
+            class="bg-mitchly-blue px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm sm:text-base transition-colors self-start sm:self-auto"
+          >
+            <Copy class="w-4 h-4" />
+            <span>Copy Profile</span>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <div class="space-y-4 sm:space-y-6">
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Band Overview</h3>
+              <div class="space-y-2 text-sm">
+                <div><strong>Primary Genre:</strong> {{ profile.primaryGenre }}</div>
+                <div v-if="profile.secondaryGenres">
+                  <strong>Secondary Genres:</strong> {{ profile.secondaryGenres.join(', ') }}
+                </div>
+                <div v-if="profile.formationYear">
+                  <strong>Formation Year:</strong> {{ profile.formationYear }}
+                </div>
+                <div v-if="profile.origin">
+                  <strong>Origin:</strong> {{ profile.origin }}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Core Sound</h3>
+              <p class="text-gray-300 text-sm">{{ profile.coreSound }}</p>
+            </div>
+            
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Vocal Style</h3>
+              <div class="text-gray-300 text-sm space-y-1">
+                <div><strong>Lead Vocals:</strong> {{ profile.vocalStyle?.type || profile.vocalStyle }}</div>
+                <div v-if="profile.vocalStyle?.characteristics">
+                  <strong>Characteristics:</strong> {{ profile.vocalStyle.characteristics }}
+                </div>
+                <div v-if="profile.vocalStyle?.influences">
+                  <strong>Influences:</strong> {{ profile.vocalStyle.influences }}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="space-y-4 sm:space-y-6">
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">Musical Influences</h3>
+              <div class="flex flex-wrap gap-2">
+                <span 
+                  v-for="(influence, index) in profile.influences" 
+                  :key="index"
+                  class="bg-gray-700 px-3 py-1 rounded-full text-sm"
+                >
+                  {{ influence }}
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">Lyrical Themes</h3>
+              <div class="flex flex-wrap gap-2">
+                <span 
+                  v-for="(theme, index) in profile.lyricalThemes" 
+                  :key="index"
+                  class="bg-purple-900/30 px-3 py-1 rounded-full text-sm border border-purple-500/30"
+                >
+                  {{ theme }}
+                </span>
+              </div>
+            </div>
+            
+            <div v-if="profile.albumConcept">
+              <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">
+                Album: "{{ profile.albumConcept.title }}"
+              </h3>
+              <p class="text-gray-300 text-sm">{{ profile.albumConcept.description }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 sm:mt-8 bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6">
+          <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">
+            AI Description ({{ profile.aiDescription?.length || 0 }}/200 chars)
+          </h3>
+          <div class="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-600 font-mono text-sm">
+            {{ profile.aiDescription }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Individual Songs -->
+      <div class="bg-gray-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-700">
+        <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center">Individual Songs</h2>
+        
+        <div class="space-y-4 sm:space-y-6">
+          <div 
+            v-for="(song, index) in songs" 
+            :key="index"
+            class="bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-700"
+          >
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-3 sm:space-y-0">
+              <div>
+                <h3 class="text-lg sm:text-xl font-semibold text-mitchly-blue">
+                  {{ song.trackNumber }}. {{ song.title }}
+                </h3>
+                <p class="text-gray-400 text-sm mt-1">
+                  {{ song.generated ? 'Ready for Mureka.ai' : 'Not generated yet' }}
+                </p>
+              </div>
+              <div class="flex space-x-2">
+                <button
+                  v-if="!song.generated"
+                  @click="$emit('generateSong', index)"
+                  :disabled="generatingSongIndex === index"
+                  class="bg-mitchly-purple px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2 text-sm transition-colors"
+                >
+                  <Zap v-if="generatingSongIndex !== index" class="w-4 h-4" />
+                  <div v-else class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Song' }}</span>
+                </button>
+                <button
+                  v-else
+                  @click="copySongForMureka(song)"
+                  class="bg-mitchly-blue px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm transition-colors"
+                >
+                  <Copy class="w-4 h-4" />
+                  <span>Copy for Mureka.ai</span>
+                </button>
+              </div>
+            </div>
+            
+            <div v-if="song.generated">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p class="text-sm text-gray-400 mb-1">Artist Description:</p>
+                  <p class="text-sm bg-gray-800 p-2 sm:p-3 rounded border font-mono">
+                    {{ song.artistDescription }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400 mb-1">
+                    Song Description ({{ song.songDescription?.length || 0 }} chars):
+                  </p>
+                  <p class="text-sm bg-gray-800 p-2 sm:p-3 rounded border font-mono">
+                    {{ song.songDescription }}
+                  </p>
+                </div>
+              </div>
+              
+              <details class="cursor-pointer">
+                <summary class="text-mitchly-purple hover:text-purple-300 mb-3 text-sm sm:text-base">
+                  View Complete Lyrics
+                </summary>
+                <div class="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-600 max-h-96 overflow-y-auto">
+                  <pre class="text-sm text-gray-300 whitespace-pre-wrap font-mono">{{ song.lyrics }}</pre>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 sm:mt-8 text-center space-y-4">
+          <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3 flex items-center justify-center space-x-2">
+              <FileText class="w-5 h-5" />
+              <span>Ready for AI Music Generation!</span>
+            </h3>
+            <p class="text-gray-300 mb-4 text-sm sm:text-base">
+              Generate individual songs and copy them directly into Mureka.ai or similar AI music platforms. 
+              Each song includes optimized descriptions and properly formatted lyrics for best results.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <button
+                @click="$emit('startOver')"
+                class="bg-gray-700 px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-600 text-sm sm:text-base transition-colors"
+              >
+                Create New Project
+              </button>
+              <button
+                @click="copyAllGeneratedSongs"
+                class="bg-gradient-to-r from-mitchly-purple to-mitchly-blue px-4 sm:px-6 py-2 rounded-lg hover:from-purple-600 hover:to-blue-700 flex items-center justify-center space-x-2 text-sm sm:text-base transition-all"
+              >
+                <Download class="w-4 h-4" />
+                <span>Copy Generated Songs</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { Copy, Zap, FileText, Download } from 'lucide-vue-next'
+
+export default {
+  name: 'BandProfile',
+  components: {
+    Copy,
+    Zap,
+    FileText,
+    Download
+  },
+  props: {
+    profile: {
+      type: Object,
+      required: true
+    },
+    songs: {
+      type: Array,
+      required: true
+    },
+    generatingSongIndex: {
+      type: Number,
+      default: null
+    }
+  },
+  emits: ['generateSong', 'startOver'],
+  methods: {
+    copyBandProfile() {
+      const profileText = this.formatBandProfile(this.profile)
+      navigator.clipboard.writeText(profileText).then(() => {
+        // Could add a toast notification here
+        console.log('Band profile copied to clipboard')
+      })
+    },
+    
+    copySongForMureka(song) {
+      const songText = this.formatSongForMureka(song)
+      navigator.clipboard.writeText(songText).then(() => {
+        console.log('Song copied to clipboard')
+      })
+    },
+    
+    copyAllGeneratedSongs() {
+      const generatedSongs = this.songs.filter(song => song.generated)
+      const allSongs = generatedSongs.map(song => this.formatSongForMureka(song)).join('\n\n---\n\n')
+      navigator.clipboard.writeText(allSongs).then(() => {
+        console.log('All generated songs copied to clipboard')
+      })
+    },
+    
+    formatBandProfile(profile) {
+      return `# ${profile.bandName} - Band Profile
+
+## Band Overview
+**Band Name**: ${profile.bandName}
+**Primary Genre**: ${profile.primaryGenre}
+${profile.secondaryGenres ? `**Secondary Genres**: ${profile.secondaryGenres.join(', ')}` : ''}
+${profile.formationYear ? `**Formation Year**: ${profile.formationYear}` : ''}
+${profile.origin ? `**Origin**: ${profile.origin}` : ''}
+
+## Core Sound
+${profile.coreSound}
+
+## Vocal Style
+**Lead Vocals**: ${profile.vocalStyle?.type || profile.vocalStyle}
+${profile.vocalStyle?.characteristics ? `**Vocal Characteristics**: ${profile.vocalStyle.characteristics}` : ''}
+${profile.vocalStyle?.influences ? `**Vocal Influences**: ${profile.vocalStyle.influences}` : ''}
+
+${profile.instrumentation ? `## Core Instrumentation
+${profile.instrumentation.map(inst => `* ${inst}`).join('\n')}` : ''}
+
+## Musical Influences
+${profile.influences?.map((inf, i) => `${i + 1}. **${inf}**`).join('\n')}
+
+## Band History
+${profile.backstory}
+
+${profile.visualIdentity ? `## Visual Identity
+**Colors**: ${profile.visualIdentity.colors}
+**Aesthetic**: ${profile.visualIdentity.aesthetic}
+**Logo Concept**: ${profile.visualIdentity.logo}
+**Style**: ${profile.visualIdentity.style}` : ''}
+
+## Lyrical Themes
+${profile.lyricalThemes?.map(theme => `* **${theme}**`).join('\n')}
+
+${profile.albumConcept ? `## Album Concept: "${profile.albumConcept.title}"
+${profile.albumConcept.description}` : ''}
+
+${profile.trackListing ? `## Track Listing
+${profile.trackListing.map((track, i) => `${i + 1}. **${track}**`).join('\n')}` : ''}
+
+${profile.productionStyle ? `## Production Style
+${profile.productionStyle}` : ''}
+
+## AI Description (${profile.aiDescription?.length || 0}/200 characters)
+${profile.aiDescription}`
+    },
+    
+    formatSongForMureka(song) {
+      return `Artist: ${this.profile.bandName}
+Album: ${this.profile.albumConcept?.title || 'Album'}
+Track: ${song.trackNumber}. ${song.title}
+
+Artist Description: ${song.artistDescription}
+Song Description: ${song.songDescription}
+
+Lyrics:
+${song.lyrics}`
+    }
+  }
+}
+</script>
