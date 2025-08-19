@@ -1,0 +1,139 @@
+const Anthropic = require('@anthropic-ai/sdk');
+
+exports.handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const { songStub, bandProfile, albumConcept } = JSON.parse(event.body);
+
+    // Validate required inputs
+    if (!songStub || !bandProfile) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Song stub and band profile are required',
+          received: { songStub: !!songStub, bandProfile: !!bandProfile }
+        })
+      };
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'API configuration error' })
+      };
+    }
+    
+    const anthropic = new Anthropic({ apiKey });
+
+    const systemPrompt = `You are an expert songwriter creating lyrics for AI music generation platforms like Mureka.ai.
+
+Create complete song lyrics using proper Mureka.ai formatting: [Intro], [Verse], [Chorus], [Bridge], [Outro]
+
+CRITICAL: Your response MUST be valid JSON only. No markdown, no explanations.
+
+Required JSON format:
+{
+  "trackNumber": number,
+  "title": "Song Title",
+  "songDescription": "Under 100 characters for Mureka.ai",
+  "lyrics": "Complete formatted lyrics with [Section] tags",
+  "mood": "Song energy and emotion",
+  "themes": ["theme1", "theme2"]
+}`;
+
+    const userPrompt = `Create complete lyrics for:
+
+BAND: ${bandProfile.name || bandProfile.bandName}
+GENRE: ${bandProfile.genre?.primary || bandProfile.primaryGenre}
+VOCAL STYLE: ${JSON.stringify(bandProfile.vocalStyle)}
+
+ALBUM: ${albumConcept?.title || 'Unknown'}
+ALBUM CONCEPT: ${albumConcept?.concept || ''}
+
+SONG DETAILS:
+- Track #${songStub.trackNumber}: "${songStub.title}"
+- Concept: ${songStub.concept}
+- Mood: ${songStub.mood}
+- Musical Style: ${songStub.musicalStyle}
+- Themes: ${JSON.stringify(songStub.lyricThemes)}
+- Key Concepts: ${JSON.stringify(songStub.keyLyricConcepts)}
+- Song Description: "${songStub.songDescription}"
+
+Write complete lyrics matching the band's style and song concept. Use [Section] formatting.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022', // Opus would be better for creative lyrics but this is faster
+      max_tokens: 2500,
+      temperature: 0.8, // Higher creativity for lyrics
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    });
+
+    let content = response.content[0].text.trim();
+    
+    // Clean JSON response
+    if (content.includes('```json')) {
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    } else if (content.includes('```')) {
+      content = content.replace(/```\n?/g, '').trim();
+    }
+    
+    // Parse JSON - this WILL work or fail clearly
+    const songData = JSON.parse(content);
+    
+    // Validate structure
+    if (!songData.lyrics || !songData.title) {
+      throw new Error('Missing required lyrics or title');
+    }
+    
+    if (songData.songDescription && songData.songDescription.length > 100) {
+      throw new Error(`Song description too long: ${songData.songDescription.length} chars`);
+    }
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(songData)
+    };
+
+  } catch (error) {
+    console.error('Error generating song lyrics:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to generate song lyrics',
+        details: error.message 
+      })
+    };
+  }
+};

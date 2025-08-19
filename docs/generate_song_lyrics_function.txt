@@ -1,0 +1,214 @@
+const Anthropic = require('@anthropic-ai/sdk');
+
+// Optional: Set your webhook.site URL here for debugging
+const WEBHOOK_URL = process.env.WEBHOOK_URL || null;
+
+async function sendToWebhook(data) {
+  if (!WEBHOOK_URL) return;
+  
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        function: 'generate-song-lyrics',
+        ...data
+      })
+    });
+  } catch (err) {
+    console.error('Webhook error:', err);
+  }
+}
+
+exports.handler = async (event, context) => {
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
+  try {
+    const { 
+      bandProfile, 
+      albumConcept, 
+      songStub,
+      trackNumber 
+    } = JSON.parse(event.body);
+    
+    await sendToWebhook({
+      stage: 'request_received',
+      song_title: songStub?.title,
+      track_number: trackNumber
+    });
+
+    // Validate required inputs
+    if (!bandProfile || !songStub) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Band profile and song stub are required',
+          received: {
+            bandProfile: !!bandProfile,
+            songStub: !!songStub
+          }
+        })
+      };
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'API configuration error. Please ensure ANTHROPIC_API_KEY is set.' 
+        })
+      };
+    }
+    
+    const anthropic = new Anthropic({
+      apiKey: apiKey
+    });
+
+    const systemPrompt = `You are an expert songwriter creating lyrics for AI music generation platforms like Mureka.ai.
+
+Given band profile and song concept information, create complete song lyrics using proper Mureka.ai formatting.
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Use [Section] format: [Intro], [Verse], [Chorus], [Bridge], [Outro]
+- Each section should be clearly separated
+- Write complete, performance-ready lyrics
+- Match the band's style and vocal characteristics
+- Fit the song's mood, themes, and structure
+
+Your response must be valid JSON in this exact format:
+{
+  "trackNumber": number,
+  "title": "Song Title",
+  "songDescription": "100 character max description for Mureka.ai",
+  "lyrics": "Complete formatted lyrics with [Intro]\\n[Verse]\\nLyric lines here\\n[Chorus]\\nChorus lyrics\\n[Bridge]\\nBridge section\\n[Outro]\\nEnding",
+  "structure": "Description of song structure",
+  "mood": "Song mood and energy",
+  "themes": ["theme1", "theme2"]
+}
+
+Return only JSON, no markdown or explanations.`;
+
+    const userPrompt = `Create complete lyrics for this song:
+
+BAND PROFILE:
+- Name: ${bandProfile.name}
+- Genre: ${bandProfile.genre?.primary}
+- Core Sound: ${bandProfile.coreSound}
+- Vocal Style: ${JSON.stringify(bandProfile.vocalStyle)}
+- Lyrical Themes: ${JSON.stringify(bandProfile.lyricalThemes)}
+
+ALBUM CONTEXT:
+- Title: ${albumConcept?.title || 'Unknown'}
+- Concept: ${albumConcept?.concept || 'No album concept provided'}
+
+SONG STUB:
+- Track #: ${trackNumber}
+- Title: "${songStub.title}"
+- Concept: ${songStub.concept}
+- Mood: ${songStub.mood}
+- Musical Style: ${songStub.musicalStyle}
+- Lyric Themes: ${JSON.stringify(songStub.lyricThemes)}
+- Structure: ${songStub.structure}
+- Key Concepts: ${JSON.stringify(songStub.keyLyricConcepts)}
+- Song Description: "${songStub.songDescription}"
+
+Create lyrics that match the band's style and the song's concept. Use proper [Section] formatting for Mureka.ai.`;
+
+    await sendToWebhook({
+      stage: 'sending_to_anthropic',
+      song_title: songStub.title
+    });
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      temperature: 0.8, // Higher creativity for lyrics
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    });
+
+    const content = response.content[0].text.trim();
+    
+    // Clean up response
+    let jsonContent = content;
+    if (content.includes('```json')) {
+      jsonContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    } else if (content.includes('```')) {
+      jsonContent = content.replace(/```\n?/g, '').trim();
+    }
+    
+    // Parse the JSON response
+    const songData = JSON.parse(jsonContent);
+    
+    // Validate required fields
+    if (!songData.lyrics || !songData.title) {
+      throw new Error('Generated song missing required lyrics or title');
+    }
+    
+    // Validate song description length
+    if (songData.songDescription && songData.songDescription.length > 100) {
+      throw new Error(`Song description too long: ${songData.songDescription.length} chars`);
+    }
+
+    await sendToWebhook({
+      stage: 'success',
+      song_title: songData.title,
+      lyrics_length: songData.lyrics.length
+    });
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(songData)
+    };
+
+  } catch (error) {
+    console.error('Error generating song lyrics:', error);
+    await sendToWebhook({
+      stage: 'error',
+      error: error.message
+    });
+    
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to generate song lyrics',
+        details: error.message 
+      })
+    };
+  }
+};

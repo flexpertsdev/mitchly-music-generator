@@ -1,0 +1,212 @@
+const Anthropic = require('@anthropic-ai/sdk');
+
+exports.handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const { conceptText } = JSON.parse(event.body);
+
+    if (!conceptText) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Concept text is required' })
+      };
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'API configuration error' })
+      };
+    }
+    
+    const anthropic = new Anthropic({ apiKey });
+
+    const systemPrompt = `You are an expert music producer and band conceptualist. Create a comprehensive band profile and album concept with detailed song stubs.
+
+Your response MUST be valid JSON only. No markdown, no explanations, just the JSON object.
+
+Create 8-10 songs with detailed stubs that provide enough context for individual lyric generation later.
+
+Required JSON structure:
+{
+  "band": {
+    "name": "Creative band name",
+    "formationYear": "2024",
+    "origin": "City, Country",
+    "genre": {
+      "primary": "Main genre with detailed characteristics",
+      "secondary": ["Secondary genre 1", "Secondary genre 2"]
+    },
+    "coreSound": "Detailed musical description focusing on instruments, production style, vocal characteristics, and sonic palette",
+    "vocalStyle": {
+      "gender": "male" or "female",
+      "characteristics": "Vocal tone, range, style, power, emotion",
+      "influences": "Vocal influences and style comparisons"
+    },
+    "instrumentation": [
+      "Lead instrument: Role and playing style",
+      "Rhythm section: Bass and drums characteristics", 
+      "Additional instruments and their roles"
+    ],
+    "influences": ["Artist 1", "Artist 2", "Artist 3", "Artist 4", "Artist 5"],
+    "backstory": "2-3 sentence band formation story, mission, and artistic vision",
+    "visualIdentity": {
+      "colors": ["#hexcolor1", "#hexcolor2", "#hexcolor3"],
+      "logoStyle": "Logo design concept and style direction",
+      "aesthetic": "Overall visual branding and style approach",
+      "websiteStyle": "Website design aesthetic and user experience concept"
+    },
+    "lyricalThemes": ["Core theme 1", "Core theme 2", "Core theme 3", "Core theme 4", "Core theme 5"],
+    "artistDescription": "Exactly 180-200 characters describing core sound for consistent AI music generation",
+    "bandPhotoPrompt": "Detailed photo concept: number of members, demographics, clothing style, pose/attitude, location, mood, color/black-and-white"
+  },
+  "album": {
+    "title": "Album title that reflects the concept",
+    "concept": "Album's overarching narrative, themes, and emotional journey",
+    "trackCount": 8,
+    "overallMood": "Album's emotional progression and atmosphere",
+    "productionStyle": "Recording approach, sonic characteristics, and production aesthetic",
+    "tracks": [
+      {
+        "trackNumber": 1,
+        "title": "Song title",
+        "songDescription": "Exactly 100 characters or less for Mureka.ai dynamic description",
+        "concept": "Song's core theme, message, and narrative purpose within album",
+        "mood": "Emotional tone, energy level, and atmospheric qualities",
+        "musicalStyle": "Tempo, instrumentation highlights, dynamics, and arrangement style",
+        "lyricThemes": ["Primary theme", "Secondary theme"],
+        "structure": "Song structure format (e.g., Verse-Chorus-Bridge, ABABCB, etc.)",
+        "keyLyricConcepts": [
+          "Opening/verse concept and imagery",
+          "Chorus hook and main message", 
+          "Bridge or climax concept",
+          "Overall lyrical direction"
+        ],
+        "albumPosition": "Role in album narrative (opener, emotional peak, transition, closer, etc.)"
+      }
+    ]
+  },
+  "imageGeneration": {
+    "standardPrompt": "Professional band photo, high quality, album cover style, studio lighting, promotional photography",
+    "finalPrompt": "Combined standard prompt with band-specific photo concept for image generation"
+  }
+}
+
+Focus on creating variety across the album - different tempos, moods, and themes while maintaining cohesion.`;
+
+    const userPrompt = `Based on this concept: "${conceptText}"
+
+Create a comprehensive band profile and album with detailed song stubs. Each song stub must contain enough context and detail to generate complete, cohesive lyrics later that fit the band's style and album narrative.
+
+Requirements:
+- artistDescription must be exactly 180-200 characters
+- Each songDescription must be 100 characters or less
+- Create 8-10 diverse tracks with clear album progression
+- Include detailed musical and lyrical context for each song
+- Ensure thematic cohesion across the album
+
+Return only the JSON object, no other text.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 6000, // Increased for detailed song stubs
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    });
+
+    let content = response.content[0].text.trim();
+    
+    // Clean JSON response
+    if (content.includes('```json')) {
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    } else if (content.includes('```')) {
+      content = content.replace(/```\n?/g, '').trim();
+    }
+    
+    // Parse JSON - guaranteed structure
+    const musicProject = JSON.parse(content);
+    
+    // Validate required structure
+    const requiredFields = ['band', 'album'];
+    const missingFields = requiredFields.filter(field => !musicProject[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+    
+    // Validate artist description length (critical for Mureka.ai consistency)
+    const descLength = musicProject.band.artistDescription?.length;
+    if (!descLength || descLength < 180 || descLength > 200) {
+      throw new Error(`Artist description must be 180-200 characters, got ${descLength}`);
+    }
+    
+    // Validate song descriptions and structure
+    for (const track of musicProject.album.tracks) {
+      if (!track.songDescription || track.songDescription.length > 100) {
+        throw new Error(`Track "${track.title}" description invalid: ${track.songDescription?.length || 0} chars`);
+      }
+      
+      if (!track.keyLyricConcepts || track.keyLyricConcepts.length < 3) {
+        throw new Error(`Track "${track.title}" needs more detailed lyric concepts for generation`);
+      }
+    }
+
+    // Add generation metadata
+    const finalResult = {
+      ...musicProject,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        conceptText: conceptText.substring(0, 200) + '...',
+        version: '1.0',
+        artistDescriptionLength: descLength,
+        trackCount: musicProject.album.tracks.length
+      }
+    };
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(finalResult)
+    };
+
+  } catch (error) {
+    console.error('Error generating band concept:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to generate band concept',
+        details: error.message 
+      })
+    };
+  }
+};

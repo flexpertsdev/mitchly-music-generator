@@ -123,20 +123,20 @@
           <!-- AI Description -->
           <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-lg p-6 mt-8 border border-gray-800">
             <h3 class="font-semibold mb-2 text-white">AI Music Platform Description</h3>
-            <p class="text-gray-700">{{ bandProfile.aiDescription }}</p>
+            <p class="text-gray-300">{{ bandProfile.aiDescription }}</p>
           </div>
         </div>
 
         <!-- Music Tab -->
         <div v-show="activeTab === 'music'">
           <!-- Album Info -->
-          <div class="bg-white rounded-lg p-6 shadow-sm mb-8">
+          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800 mb-8">
             <h2 class="text-2xl font-bold mb-2 text-white">{{ bandProfile.albumConcept?.title }}</h2>
-            <p class="text-gray-700">{{ bandProfile.albumConcept?.description }}</p>
+            <p class="text-gray-300">{{ bandProfile.albumConcept?.description }}</p>
           </div>
 
           <!-- Track Listing -->
-          <div class="bg-white rounded-lg p-6 shadow-sm">
+          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
             <h3 class="text-xl font-bold mb-4 text-white">Track Listing</h3>
             <div class="space-y-3">
               <div
@@ -154,6 +154,28 @@
                   />
                 </div>
                 <div class="flex gap-2">
+                  <button
+                    v-if="!getSongLyrics(track)"
+                    @click="handleGenerateSong(track, index + 1)"
+                    :disabled="generatingSongIndex === index"
+                    class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
+                    <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Song' }}</span>
+                  </button>
+                  <button
+                    v-if="getSongLyrics(track) && !getSongAudio(track)"
+                    @click="handleGenerateAudio(track)"
+                    :disabled="audioGenerationStatus[track]?.status === 'processing'"
+                    class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
+                    <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>
+                      {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                    </span>
+                  </button>
                   <button
                     v-if="getSongLyrics(track)"
                     @click="showLyrics(track)"
@@ -178,24 +200,74 @@
 
         <!-- Visual Tab -->
         <div v-show="activeTab === 'visual'">
-          <div class="bg-white rounded-lg p-6 shadow-sm">
-            <h2 class="text-xl font-bold mb-4">Visual Identity</h2>
+          <!-- Visual Identity Description -->
+          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-white">Visual Identity</h2>
             <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 class="font-semibold mb-2">Colors</h3>
+                <h3 class="font-semibold mb-2 text-white">Colors</h3>
                 <p class="text-gray-300">{{ bandProfile.visualIdentity?.colors }}</p>
               </div>
               <div>
-                <h3 class="font-semibold mb-2">Aesthetic</h3>
+                <h3 class="font-semibold mb-2 text-white">Aesthetic</h3>
                 <p class="text-gray-300">{{ bandProfile.visualIdentity?.aesthetic }}</p>
               </div>
               <div>
-                <h3 class="font-semibold mb-2">Logo Concept</h3>
+                <h3 class="font-semibold mb-2 text-white">Logo Concept</h3>
                 <p class="text-gray-300">{{ bandProfile.visualIdentity?.logo }}</p>
               </div>
               <div>
-                <h3 class="font-semibold mb-2">Overall Style</h3>
+                <h3 class="font-semibold mb-2 text-white">Overall Style</h3>
                 <p class="text-gray-300">{{ bandProfile.visualIdentity?.style }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Images Button -->
+          <div v-if="!bandImages.logo && !bandImages.albumCover && !bandImages.bandPhoto" class="mb-6">
+            <button
+              @click="generateBandImages"
+              :disabled="generatingImages"
+              class="w-full bg-gradient-to-r from-mitchly-purple to-mitchly-blue hover:from-mitchly-purple/80 hover:to-mitchly-blue/80 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Zap v-if="!generatingImages" class="w-5 h-5" />
+              <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>{{ generatingImages ? 'Generating Visual Assets...' : 'Generate Visual Assets with AI' }}</span>
+            </button>
+          </div>
+
+          <!-- Generated Images Grid -->
+          <div v-if="bandImages.logo || bandImages.albumCover || bandImages.bandPhoto" class="grid md:grid-cols-3 gap-6">
+            <!-- Band Logo -->
+            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
+              <h3 class="font-semibold mb-3 text-white">Band Logo</h3>
+              <div v-if="bandImages.logo" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
+                <img :src="bandImages.logo" :alt="`${bandProfile.bandName} logo`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+                <Music class="w-12 h-12 text-gray-600" />
+              </div>
+            </div>
+
+            <!-- Album Cover -->
+            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
+              <h3 class="font-semibold mb-3 text-white">Album Cover</h3>
+              <div v-if="bandImages.albumCover" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
+                <img :src="bandImages.albumCover" :alt="`${bandProfile.albumConcept?.title} cover`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+                <Music class="w-12 h-12 text-gray-600" />
+              </div>
+            </div>
+
+            <!-- Band Photo -->
+            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
+              <h3 class="font-semibold mb-3 text-white">Band Photo</h3>
+              <div v-if="bandImages.bandPhoto" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
+                <img :src="bandImages.bandPhoto" :alt="`${bandProfile.bandName} photo`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+                <Music class="w-12 h-12 text-gray-600" />
               </div>
             </div>
           </div>
@@ -232,6 +304,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
+import { generateSong } from '../services/anthropic';
+import { murekaService } from '../services/mureka';
+import { falAIService } from '../services/falai';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import { 
   Music, 
@@ -241,7 +316,9 @@ import {
   MapPin, 
   Share2,
   PlayCircle,
-  X
+  X,
+  Zap,
+  Music2
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -258,6 +335,14 @@ const lyricsModal = ref({
   title: '',
   lyrics: ''
 });
+const generatingSongIndex = ref(null);
+const audioGenerationStatus = ref({});
+const bandImages = ref({
+  logo: null,
+  albumCover: null,
+  bandPhoto: null
+});
+const generatingImages = ref(false);
 
 // Tabs
 const tabs = [
@@ -289,6 +374,11 @@ onMounted(async () => {
     
     // Load songs
     songs.value = await songService.getByBandId(bandId);
+    
+    // Load saved images if they exist
+    if (band.value?.images) {
+      bandImages.value = band.value.images;
+    }
   } catch (err) {
     console.error('Error loading band:', err);
     error.value = 'Could not load band profile. Please check the URL and try again.';
@@ -316,6 +406,105 @@ const showLyrics = (trackTitle) => {
       title: trackTitle,
       lyrics: song.lyrics
     };
+  }
+};
+
+const handleGenerateSong = async (songTitle, trackNumber) => {
+  generatingSongIndex.value = trackNumber - 1;
+  
+  try {
+    const song = await generateSong(songTitle, trackNumber, bandProfile.value);
+    
+    // Save to database
+    await songService.create({
+      bandId: band.value.$id,
+      title: songTitle,
+      trackNumber,
+      lyrics: song.lyrics,
+      description: song.songDescription,
+      artistDescription: song.artistDescription,
+      status: 'completed'
+    });
+    
+    // Reload songs
+    songs.value = await songService.getByBandId(band.value.$id);
+    
+    // Show success
+    alert(`Song "${songTitle}" has been generated!`);
+  } catch (error) {
+    console.error('Error generating song:', error);
+    alert('Failed to generate song. Please try again.');
+  } finally {
+    generatingSongIndex.value = null;
+  }
+};
+
+const handleGenerateAudio = async (songTitle) => {
+  const song = songs.value.find(s => s.title === songTitle);
+  if (!song) return;
+  
+  try {
+    audioGenerationStatus.value[songTitle] = { status: 'processing' };
+    
+    // Format lyrics for Mureka
+    const formattedLyrics = murekaService.formatLyricsForMureka(song.lyrics);
+    
+    // Generate prompt from band profile
+    const prompt = murekaService.generatePromptFromProfile(bandProfile.value);
+    
+    // Start audio generation
+    const task = await murekaService.generateAudio(formattedLyrics, prompt);
+    
+    // Poll for completion
+    const result = await murekaService.pollForCompletion(task.taskId, null, 60, 5000);
+    
+    if (result.songs && result.songs.length > 0) {
+      const generatedSong = result.songs[0];
+      
+      // Update song with audio URL
+      await songService.update(song.$id, {
+        audioUrl: generatedSong.audioUrl,
+        murekaTaskId: task.taskId
+      });
+      
+      // Reload songs
+      songs.value = await songService.getByBandId(band.value.$id);
+      
+      audioGenerationStatus.value[songTitle] = { status: 'completed' };
+      alert(`Audio for "${songTitle}" is ready!`);
+    }
+  } catch (error) {
+    console.error('Error generating audio:', error);
+    audioGenerationStatus.value[songTitle] = { status: 'failed' };
+    alert('Failed to generate audio. Please try again.');
+  }
+};
+
+const generateBandImages = async () => {
+  generatingImages.value = true;
+  
+  try {
+    const images = await falAIService.generateAllBandImages(bandProfile.value);
+    bandImages.value = images;
+    
+    // Save images to band profile if successful
+    if (images.logo || images.albumCover || images.bandPhoto) {
+      await bandService.update(band.value.$id, {
+        images: {
+          logo: images.logo,
+          albumCover: images.albumCover,
+          bandPhoto: images.bandPhoto
+        }
+      });
+      alert('Visual assets generated successfully!');
+    } else {
+      alert('Image generation requires Fal.ai API key configuration');
+    }
+  } catch (error) {
+    console.error('Error generating images:', error);
+    alert('Failed to generate images. Please try again.');
+  } finally {
+    generatingImages.value = false;
   }
 };
 

@@ -1,0 +1,145 @@
+exports.handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const { imageType, prompt, bandProfile } = JSON.parse(event.body);
+
+    if (!imageType || !prompt) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Image type and prompt are required',
+          validTypes: ['band-photo', 'logo', 'album-cover']
+        })
+      };
+    }
+
+    const FAL_API_KEY = process.env.FAL_API_KEY;
+    if (!FAL_API_KEY) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'FAL API key not configured' })
+      };
+    }
+
+    // Configure based on image type
+    let finalPrompt;
+    let imageSize = "square_hd"; // Default
+    let model = "fal-ai/flux/schnell"; // Fast model
+
+    switch (imageType) {
+      case 'band-photo':
+        finalPrompt = `Professional band photo, high quality, album cover style, studio lighting, promotional photography, ${prompt}, sharp focus, well-lit, music industry standard`;
+        imageSize = "landscape_4_3";
+        break;
+      
+      case 'logo':
+        finalPrompt = `Professional band logo design, ${prompt}, clean vector style, high contrast, suitable for merchandise, scalable design, music industry branding`;
+        imageSize = "square_hd";
+        model = "fal-ai/flux/dev"; // Better quality for logos
+        break;
+      
+      case 'album-cover':
+        finalPrompt = `Album cover artwork, ${prompt}, professional music industry quality, ${bandProfile?.genre?.primary || ''} aesthetic, square format, high resolution, artistic`;
+        imageSize = "square_hd";
+        model = "fal-ai/flux/dev"; // Better quality for album covers
+        break;
+      
+      default:
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Invalid image type' })
+        };
+    }
+
+    // Generate image with FAL
+    const response = await fetch(`https://fal.run/${model}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: finalPrompt,
+        image_size: imageSize,
+        num_inference_steps: imageType === 'logo' ? 28 : 20, // More steps for logos
+        seed: Math.floor(Math.random() * 1000000), // Random seed for variety
+        enable_safety_checker: true
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('FAL API error:', error);
+      return {
+        statusCode: response.status,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Failed to generate image',
+          details: error 
+        })
+      };
+    }
+
+    const result = await response.json();
+    
+    // FAL returns images in different formats, normalize the response
+    const imageUrl = result.images?.[0]?.url || result.image?.url || result.url;
+    
+    if (!imageUrl) {
+      throw new Error('No image URL in response');
+    }
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        imageUrl,
+        imageType,
+        prompt: finalPrompt,
+        size: imageSize,
+        model,
+        seed: result.seed,
+        timeTaken: result.timings?.inference || 0
+      })
+    };
+
+  } catch (error) {
+    console.error('Error generating image:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to generate image',
+        details: error.message 
+      })
+    };
+  }
+};

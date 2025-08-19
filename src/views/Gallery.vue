@@ -369,9 +369,9 @@ const loadBands = async () => {
   try {
     loading.value = true;
     
-    // Load all bands
+    // Load bands from both Appwrite and localStorage
     const [bandList, songList] = await Promise.all([
-      bandService.list(100), // Get more bands
+      bandService.list(100), // Get more bands from Appwrite/localStorage
       songService.list(200)  // Get all songs
     ]);
     
@@ -382,6 +382,9 @@ const loadBands = async () => {
     hasMore.value = bandList.length === 100;
   } catch (error) {
     console.error('Error loading bands:', error);
+    // Even if Appwrite fails, we should still get localStorage bands
+    bands.value = await bandService.list(100);
+    songs.value = [];
   } finally {
     loading.value = false;
   }

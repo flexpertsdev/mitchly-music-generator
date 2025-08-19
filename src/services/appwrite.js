@@ -185,9 +185,12 @@ export const bandService = {
         if (localBand) {
           return {
             ...localBand,
-            profileData: JSON.parse(localBand.profileData)
+            profileData: typeof localBand.profileData === 'string' 
+              ? JSON.parse(localBand.profileData) 
+              : localBand.profileData
           };
         }
+        throw new Error('Band not found in local storage');
       }
       
       if (isAppwriteAvailable) {
@@ -198,14 +201,18 @@ export const bandService = {
         );
         return {
           ...document,
-          profileData: JSON.parse(document.profileData)
+          profileData: typeof document.profileData === 'string'
+            ? JSON.parse(document.profileData)
+            : document.profileData
         };
       } else {
         const localBand = localStorageFallback.bands.get(bandId);
         if (localBand) {
           return {
             ...localBand,
-            profileData: JSON.parse(localBand.profileData)
+            profileData: typeof localBand.profileData === 'string'
+              ? JSON.parse(localBand.profileData)
+              : localBand.profileData
           };
         }
         throw new Error('Band not found');
@@ -216,7 +223,9 @@ export const bandService = {
       if (localBand) {
         return {
           ...localBand,
-          profileData: JSON.parse(localBand.profileData)
+          profileData: typeof localBand.profileData === 'string'
+            ? JSON.parse(localBand.profileData)
+            : localBand.profileData
         };
       }
       throw error;

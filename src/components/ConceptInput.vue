@@ -51,12 +51,12 @@
             
             <button
               @click="handleGenerate"
-              :disabled="isLoading || !conceptText.trim()"
-              class="w-full py-3 sm:py-4 bg-mitchly-blue text-black font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:bg-mitchly-blue/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
+              :disabled="loading || !conceptText.trim()"
+              class="w-full py-3 sm:py-4 bg-mitchly-blue text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:bg-mitchly-blue/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
             >
-              <Zap v-if="!isLoading" class="w-5 h-5" />
-              <div v-else class="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-              <span>{{ isLoading ? 'Generating...' : 'Generate Project' }}</span>
+              <Zap v-if="!loading" class="w-5 h-5" />
+              <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>{{ loading ? 'Generating...' : 'Generate Project' }}</span>
             </button>
           </div>
         </div>
@@ -69,17 +69,17 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
             <div>
-              <label class="block text-sm font-medium mb-2">Band/Artist Name</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Band/Artist Name</label>
               <input
                 type="text"
                 v-model="formData.bandName"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
                 placeholder="Enter your band name"
               />
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2">Primary Genre</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Primary Genre</label>
               <select
                 v-model="formData.genre"
                 class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
@@ -99,51 +99,51 @@
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2">Album Name</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Album Name</label>
               <input
                 type="text"
                 v-model="formData.albumName"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
                 placeholder="Enter album title"
               />
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2">Number of Tracks</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Number of Tracks</label>
               <input
                 type="number"
                 min="3"
                 max="15"
                 v-model="formData.trackCount"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
               />
             </div>
             
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium mb-2">Musical Influences (comma-separated)</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Musical Influences (comma-separated)</label>
               <input
                 type="text"
                 v-model="formData.influences"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
                 placeholder="e.g., Daft Punk, The Weeknd, ODESZA"
               />
             </div>
             
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium mb-2">Lyrical Themes (comma-separated)</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Lyrical Themes (comma-separated)</label>
               <input
                 type="text"
                 v-model="formData.themes"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
                 placeholder="e.g., love, freedom, technology, dreams"
               />
             </div>
             
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium mb-2">Musical Concept Description</label>
+              <label class="block text-sm font-medium mb-2 text-gray-300">Musical Concept Description</label>
               <textarea
                 v-model="formData.concept"
-                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-24 sm:h-32 text-sm sm:text-base resize-none"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-24 sm:h-32 text-sm sm:text-base resize-none text-white placeholder-gray-500"
                 placeholder="Describe your vision for this musical project..."
               />
             </div>
@@ -151,12 +151,12 @@
           
           <button
             @click="handleAdvancedGenerate"
-            :disabled="isLoading || !formData.bandName || !formData.genre"
-            class="w-full py-3 sm:py-4 bg-gradient-to-r from-mitchly-blue to-mitchly-purple text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
+            :disabled="loading || !formData.bandName || !formData.genre"
+            class="w-full py-3 sm:py-4 bg-mitchly-blue text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:bg-mitchly-blue/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
           >
-            <Zap v-if="!isLoading" class="w-5 h-5" />
+            <Zap v-if="!loading" class="w-5 h-5" />
             <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span>{{ isLoading ? 'Generating...' : 'Generate Profile' }}</span>
+            <span>{{ loading ? 'Generating...' : 'Generate Profile' }}</span>
           </button>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default {
     Zap
   },
   props: {
-    isLoading: {
+    loading: {
       type: Boolean,
       default: false
     }

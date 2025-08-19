@@ -1,0 +1,267 @@
+const { Client, Databases, Storage, ID } = require('node-appwrite');
+
+exports.handler = async (event, context) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const client = new Client();
+    
+    // Configure Appwrite client
+    client
+      .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+      .setProject(process.env.APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const databases = new Databases(client);
+    const storage = new Storage(client);
+
+    const { action, data } = JSON.parse(event.body);
+
+    switch (action) {
+      case 'save-band-profile':
+        return await saveBandProfile(databases, data, headers);
+      
+      case 'update-song-lyrics':
+        return await updateSongLyrics(databases, data, headers);
+      
+      case 'upload-image':
+        return await uploadImage(storage, databases, data, headers);
+      
+      case 'get-band-profile':
+        return await getBandProfile(databases, data.documentId, headers);
+      
+      case 'list-band-profiles':
+        return await listBandProfiles(databases, headers);
+      
+      default:
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Invalid action' })
+        };
+    }
+
+  } catch (error) {
+    console.error('Appwrite operation error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Database operation failed',
+        details: error.message 
+      })
+    };
+  }
+};
+
+async function saveBandProfile(databases, musicProject, headers) {
+  try {
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'mitchly-music-db';
+    const collectionId = 'band-projects'; // Our new collection
+    
+    // Structure data for Appwrite storage
+    const document = {
+      bandName: musicProject.band.name,
+      albumTitle: musicProject.album.title,
+      primaryGenre: musicProject.band.genre.primary,
+      bandData: JSON.stringify(musicProject.band),
+      albumData: JSON.stringify(musicProject.album),
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const result = await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      document
+    );
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        documentId: result.$id,
+        bandName: result.bandName,
+        albumTitle: result.albumTitle,
+        genre: result.primaryGenre,
+        trackCount: musicProject.album.tracks.length
+      })
+    };
+  } catch (error) {
+    throw new Error(`Failed to save band profile: ${error.message}`);
+  }
+}
+
+async function updateSongLyrics(databases, data, headers) {
+  try {
+    const { documentId, trackNumber, songData } = data;
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'mitchly-music-db';
+    const collectionId = 'band-projects';
+
+    // Get existing document
+    const existing = await databases.getDocument(databaseId, collectionId, documentId);
+    
+    // Parse the album data
+    const albumData = JSON.parse(existing.albumData);
+    
+    // Update the specific track
+    const tracks = albumData.tracks.map(track => {
+      if (track.trackNumber === trackNumber) {
+        return { ...track, ...songData, lyricsGenerated: true };
+      }
+      return track;
+    });
+
+    // Update the album data
+    const updatedAlbumData = { ...albumData, tracks };
+
+    // Update document
+    const result = await databases.updateDocument(
+      databaseId,
+      collectionId,
+      documentId,
+      {
+        albumData: JSON.stringify(updatedAlbumData),
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        documentId: result.$id,
+        trackNumber,
+        songTitle: songData.title
+      })
+    };
+  } catch (error) {
+    throw new Error(`Failed to update song lyrics: ${error.message}`);
+  }
+}
+
+async function uploadImage(storage, databases, data, headers) {
+  try {
+    const { imageUrl, imageType, documentId, metadata = {} } = data;
+    const bucketId = 'mitchly-music'; // Our created bucket
+    
+    // Download image from URL
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error('Failed to download image');
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const fileName = `${imageType}-${Date.now()}.png`;
+    
+    // Upload to Appwrite Storage
+    const file = await storage.createFile(
+      bucketId,
+      ID.unique(),
+      fileName,
+      Buffer.from(imageBuffer)
+    );
+
+    // Update band profile document with image reference
+    if (documentId) {
+      const databaseId = process.env.APPWRITE_DATABASE_ID || 'mitchly-music-db';
+      const collectionId = 'band-projects';
+      
+      // Map image types to URL fields
+      const imageUrlField = imageType === 'band-photo' ? 'bandPhotoUrl' :
+                           imageType === 'logo' ? 'logoUrl' :
+                           imageType === 'album-cover' ? 'albumCoverUrl' : null;
+      
+      if (imageUrlField) {
+        const viewUrl = `${process.env.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_PROJECT_ID}`;
+        
+        await databases.updateDocument(databaseId, collectionId, documentId, {
+          [imageUrlField]: viewUrl,
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        fileId: file.$id,
+        fileName: file.name,
+        imageType,
+        downloadUrl: `${process.env.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}`,
+        viewUrl: `${process.env.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_PROJECT_ID}`
+      })
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+}
+
+async function getBandProfile(databases, documentId, headers) {
+  try {
+    const databaseId = process.env.APPWRITE_DATABASE_ID;
+    const collectionId = process.env.APPWRITE_COLLECTION_ID;
+    
+    const document = await databases.getDocument(databaseId, collectionId, documentId);
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(document)
+    };
+  } catch (error) {
+    throw new Error(`Failed to get band profile: ${error.message}`);
+  }
+}
+
+async function listBandProfiles(databases, headers) {
+  try {
+    const databaseId = process.env.APPWRITE_DATABASE_ID;
+    const collectionId = process.env.APPWRITE_COLLECTION_ID;
+    
+    const documents = await databases.listDocuments(databaseId, collectionId);
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        profiles: documents.documents.map(doc => ({
+          $id: doc.$id,
+          bandName: doc.band?.name,
+          albumTitle: doc.album?.title,
+          genre: doc.band?.genre?.primary,
+          createdAt: doc.createdAt,
+          status: doc.status,
+          trackCount: doc.album?.tracks?.length || 0,
+          hasImages: !!(doc.bandPhotoImage || doc.logoImage || doc.albumCoverImage)
+        })),
+        total: documents.total
+      })
+    };
+  } catch (error) {
+    throw new Error(`Failed to list band profiles: ${error.message}`);
+  }
+}

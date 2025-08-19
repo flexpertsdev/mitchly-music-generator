@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        'mitchly-blue': '#00E4FF',  // Electric blue primary
+        'mitchly-blue': '#0066FF',   // Mitchly brand blue
         'mitchly-purple': '#8B5CF6', // Purple secondary accent
         'mitchly-dark': '#0F0F0F',   // Dark background (Spotify-like)
         'mitchly-darker': '#000000', // Pure black

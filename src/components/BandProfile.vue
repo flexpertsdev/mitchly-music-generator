@@ -4,7 +4,7 @@
       <!-- Band Profile Display -->
       <div class="bg-gray-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-700 slide-up">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
-          <h2 class="text-2xl sm:text-3xl font-bold">{{ profile.bandName }} - Band Profile</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold">{{ bandProfile.bandName }} - Band Profile</h2>
           <button
             @click="copyBandProfile"
             class="bg-mitchly-blue px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm sm:text-base transition-colors self-start sm:self-auto"
@@ -19,33 +19,33 @@
             <div>
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Band Overview</h3>
               <div class="space-y-2 text-sm">
-                <div><strong>Primary Genre:</strong> {{ profile.primaryGenre }}</div>
-                <div v-if="profile.secondaryGenres">
-                  <strong>Secondary Genres:</strong> {{ profile.secondaryGenres.join(', ') }}
+                <div><strong>Primary Genre:</strong> {{ bandProfile.primaryGenre }}</div>
+                <div v-if="bandProfile.secondaryGenres">
+                  <strong>Secondary Genres:</strong> {{ bandProfile.secondaryGenres.join(', ') }}
                 </div>
-                <div v-if="profile.formationYear">
-                  <strong>Formation Year:</strong> {{ profile.formationYear }}
+                <div v-if="bandProfile.formationYear">
+                  <strong>Formation Year:</strong> {{ bandProfile.formationYear }}
                 </div>
-                <div v-if="profile.origin">
-                  <strong>Origin:</strong> {{ profile.origin }}
+                <div v-if="bandProfile.origin">
+                  <strong>Origin:</strong> {{ bandProfile.origin }}
                 </div>
               </div>
             </div>
             
             <div>
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Core Sound</h3>
-              <p class="text-gray-300 text-sm">{{ profile.coreSound }}</p>
+              <p class="text-gray-300 text-sm">{{ bandProfile.coreSound }}</p>
             </div>
             
             <div>
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">Vocal Style</h3>
               <div class="text-gray-300 text-sm space-y-1">
-                <div><strong>Lead Vocals:</strong> {{ profile.vocalStyle?.type || profile.vocalStyle }}</div>
-                <div v-if="profile.vocalStyle?.characteristics">
-                  <strong>Characteristics:</strong> {{ profile.vocalStyle.characteristics }}
+                <div><strong>Lead Vocals:</strong> {{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</div>
+                <div v-if="bandProfile.vocalStyle?.characteristics">
+                  <strong>Characteristics:</strong> {{ bandProfile.vocalStyle.characteristics }}
                 </div>
-                <div v-if="profile.vocalStyle?.influences">
-                  <strong>Influences:</strong> {{ profile.vocalStyle.influences }}
+                <div v-if="bandProfile.vocalStyle?.influences">
+                  <strong>Influences:</strong> {{ bandProfile.vocalStyle.influences }}
                 </div>
               </div>
             </div>
@@ -56,7 +56,7 @@
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">Musical Influences</h3>
               <div class="flex flex-wrap gap-2">
                 <span 
-                  v-for="(influence, index) in profile.influences" 
+                  v-for="(influence, index) in bandProfile.influences" 
                   :key="index"
                   class="bg-gray-700 px-3 py-1 rounded-full text-sm"
                 >
@@ -69,7 +69,7 @@
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">Lyrical Themes</h3>
               <div class="flex flex-wrap gap-2">
                 <span 
-                  v-for="(theme, index) in profile.lyricalThemes" 
+                  v-for="(theme, index) in bandProfile.lyricalThemes" 
                   :key="index"
                   class="bg-purple-900/30 px-3 py-1 rounded-full text-sm border border-purple-500/30"
                 >
@@ -78,21 +78,21 @@
               </div>
             </div>
             
-            <div v-if="profile.albumConcept">
+            <div v-if="bandProfile.albumConcept">
               <h3 class="text-base sm:text-lg font-semibold text-mitchly-purple mb-3">
-                Album: "{{ profile.albumConcept.title }}"
+                Album: "{{ bandProfile.albumConcept.title }}"
               </h3>
-              <p class="text-gray-300 text-sm">{{ profile.albumConcept.description }}</p>
+              <p class="text-gray-300 text-sm">{{ bandProfile.albumConcept.description }}</p>
             </div>
           </div>
         </div>
         
         <div class="mt-6 sm:mt-8 bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6">
           <h3 class="text-base sm:text-lg font-semibold text-mitchly-blue mb-3">
-            AI Description ({{ profile.aiDescription?.length || 0 }}/200 chars)
+            AI Description ({{ bandProfile.aiDescription?.length || 0 }}/200 chars)
           </h3>
           <div class="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-600 font-mono text-sm">
-            {{ profile.aiDescription }}
+            {{ bandProfile.aiDescription }}
           </div>
         </div>
       </div>
@@ -123,7 +123,7 @@
               <div class="flex flex-wrap gap-2">
                 <button
                   v-if="!song.generated"
-                  @click="$emit('generateSong', index)"
+                  @click="$emit('generateSong', song.title, song.trackNumber)"
                   :disabled="generatingSongIndex === index"
                   class="bg-mitchly-purple px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2 text-sm transition-colors"
                 >
@@ -134,7 +134,7 @@
                 <template v-else>
                   <button
                     v-if="!song.audioStatus || song.audioStatus === 'failed'"
-                    @click="$emit('generateAudio', index)"
+                    @click="$emit('generateAudio', song.title, song)"
                     :disabled="song.audioStatus === 'processing'"
                     class="bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2 text-sm transition-colors"
                   >
@@ -245,26 +245,44 @@ export default {
     AudioPlayer
   },
   props: {
-    profile: {
+    bandProfile: {
       type: Object,
-      required: true
-    },
-    songs: {
-      type: Array,
       required: true
     },
     generatingSongIndex: {
       type: Number,
       default: null
+    },
+    audioGenerationStatus: {
+      type: Object,
+      default: () => ({})
     }
   },
   emits: ['generateSong', 'generateAudio', 'startOver'],
+  computed: {
+    songs() {
+      if (this.bandProfile.songs) {
+        return Object.entries(this.bandProfile.songs).map(([title, songData], index) => ({
+          trackNumber: index + 1,
+          title,
+          generated: true,
+          ...songData,
+          audioStatus: this.audioGenerationStatus[title.replace(/\s+/g, '-').toLowerCase()]?.status
+        }));
+      }
+      return this.bandProfile.trackListing?.map((title, index) => ({
+        trackNumber: index + 1,
+        title,
+        generated: false
+      })) || [];
+    }
+  },
   methods: {
     copyBandProfile() {
-      const profileText = this.formatBandProfile(this.profile)
-      navigator.clipboard.writeText(profileText).then(() => {
+      const bandProfileText = this.formatBandProfile(this.bandProfile)
+      navigator.clipboard.writeText(bandProfileText).then(() => {
         // Could add a toast notification here
-        console.log('Band profile copied to clipboard')
+        console.log('Band bandProfile copied to clipboard')
       })
     },
     
@@ -283,58 +301,58 @@ export default {
       })
     },
     
-    formatBandProfile(profile) {
-      return `# ${profile.bandName} - Band Profile
+    formatBandProfile(bandProfile) {
+      return `# ${bandProfile.bandName} - Band Profile
 
 ## Band Overview
-**Band Name**: ${profile.bandName}
-**Primary Genre**: ${profile.primaryGenre}
-${profile.secondaryGenres ? `**Secondary Genres**: ${profile.secondaryGenres.join(', ')}` : ''}
-${profile.formationYear ? `**Formation Year**: ${profile.formationYear}` : ''}
-${profile.origin ? `**Origin**: ${profile.origin}` : ''}
+**Band Name**: ${bandProfile.bandName}
+**Primary Genre**: ${bandProfile.primaryGenre}
+${bandProfile.secondaryGenres ? `**Secondary Genres**: ${bandProfile.secondaryGenres.join(', ')}` : ''}
+${bandProfile.formationYear ? `**Formation Year**: ${bandProfile.formationYear}` : ''}
+${bandProfile.origin ? `**Origin**: ${bandProfile.origin}` : ''}
 
 ## Core Sound
-${profile.coreSound}
+${bandProfile.coreSound}
 
 ## Vocal Style
-**Lead Vocals**: ${profile.vocalStyle?.type || profile.vocalStyle}
-${profile.vocalStyle?.characteristics ? `**Vocal Characteristics**: ${profile.vocalStyle.characteristics}` : ''}
-${profile.vocalStyle?.influences ? `**Vocal Influences**: ${profile.vocalStyle.influences}` : ''}
+**Lead Vocals**: ${bandProfile.vocalStyle?.type || bandProfile.vocalStyle}
+${bandProfile.vocalStyle?.characteristics ? `**Vocal Characteristics**: ${bandProfile.vocalStyle.characteristics}` : ''}
+${bandProfile.vocalStyle?.influences ? `**Vocal Influences**: ${bandProfile.vocalStyle.influences}` : ''}
 
-${profile.instrumentation ? `## Core Instrumentation
-${profile.instrumentation.map(inst => `* ${inst}`).join('\n')}` : ''}
+${bandProfile.instrumentation ? `## Core Instrumentation
+${bandProfile.instrumentation.map(inst => `* ${inst}`).join('\n')}` : ''}
 
 ## Musical Influences
-${profile.influences?.map((inf, i) => `${i + 1}. **${inf}**`).join('\n')}
+${bandProfile.influences?.map((inf, i) => `${i + 1}. **${inf}**`).join('\n')}
 
 ## Band History
-${profile.backstory}
+${bandProfile.backstory}
 
-${profile.visualIdentity ? `## Visual Identity
-**Colors**: ${profile.visualIdentity.colors}
-**Aesthetic**: ${profile.visualIdentity.aesthetic}
-**Logo Concept**: ${profile.visualIdentity.logo}
-**Style**: ${profile.visualIdentity.style}` : ''}
+${bandProfile.visualIdentity ? `## Visual Identity
+**Colors**: ${bandProfile.visualIdentity.colors}
+**Aesthetic**: ${bandProfile.visualIdentity.aesthetic}
+**Logo Concept**: ${bandProfile.visualIdentity.logo}
+**Style**: ${bandProfile.visualIdentity.style}` : ''}
 
 ## Lyrical Themes
-${profile.lyricalThemes?.map(theme => `* **${theme}**`).join('\n')}
+${bandProfile.lyricalThemes?.map(theme => `* **${theme}**`).join('\n')}
 
-${profile.albumConcept ? `## Album Concept: "${profile.albumConcept.title}"
-${profile.albumConcept.description}` : ''}
+${bandProfile.albumConcept ? `## Album Concept: "${bandProfile.albumConcept.title}"
+${bandProfile.albumConcept.description}` : ''}
 
-${profile.trackListing ? `## Track Listing
-${profile.trackListing.map((track, i) => `${i + 1}. **${track}**`).join('\n')}` : ''}
+${bandProfile.trackListing ? `## Track Listing
+${bandProfile.trackListing.map((track, i) => `${i + 1}. **${track}**`).join('\n')}` : ''}
 
-${profile.productionStyle ? `## Production Style
-${profile.productionStyle}` : ''}
+${bandProfile.productionStyle ? `## Production Style
+${bandProfile.productionStyle}` : ''}
 
-## AI Description (${profile.aiDescription?.length || 0}/200 characters)
-${profile.aiDescription}`
+## AI Description (${bandProfile.aiDescription?.length || 0}/200 characters)
+${bandProfile.aiDescription}`
     },
     
     formatSongForMureka(song) {
-      return `Artist: ${this.profile.bandName}
-Album: ${this.profile.albumConcept?.title || 'Album'}
+      return `Artist: ${this.bandProfile.bandName}
+Album: ${this.bandProfile.albumConcept?.title || 'Album'}
 Track: ${song.trackNumber}. ${song.title}
 
 Artist Description: ${song.artistDescription}
