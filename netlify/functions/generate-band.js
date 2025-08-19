@@ -27,8 +27,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Use environment variable from Netlify (not exposed to client)
-    const apiKey = process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+    // Use environment variable from Netlify
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     
     if (!apiKey) {
       console.error('Anthropic API key not found in environment variables');
@@ -36,7 +36,7 @@ exports.handler = async (event, context) => {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: 'API configuration error. Please ensure VITE_ANTHROPIC_API_KEY is set in Netlify environment variables.' 
+          error: 'API configuration error. Please ensure ANTHROPIC_API_KEY is set in Netlify environment variables.' 
         })
       };
     }
