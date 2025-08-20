@@ -4,19 +4,27 @@
     <header class="bg-mitchly-darker border-b border-mitchly-gray">
       <div class="container mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
-              <span class="text-mitchly-blue">🎸</span>
-              Band Gallery
-            </h1>
-            <p class="text-gray-400 mt-1">Explore AI-generated bands from the community</p>
-          </div>
+          <!-- Mitchly Logo -->
+          <router-link to="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <img 
+              src="/ic_launcher-web.png" 
+              alt="Mitchly" 
+              class="w-10 h-10 rounded-lg"
+            />
+          </router-link>
+          
+          <!-- Title -->
+          <h1 class="text-2xl md:text-3xl font-bold text-white">
+            Band Gallery
+          </h1>
+          
+          <!-- Create Band Button -->
           <router-link 
             to="/"
-            class="bg-mitchly-blue/10 hover:bg-mitchly-blue/20 text-mitchly-blue px-4 py-2 rounded-lg transition-all border border-mitchly-blue/30 flex items-center gap-2"
+            class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
           >
-            <Home class="w-5 h-5" />
-            Create Band
+            <Plus class="w-5 h-5" />
+            <span class="hidden sm:inline">Create Band</span>
           </router-link>
         </div>
       </div>
@@ -64,42 +72,6 @@
         </div>
       </div>
 
-      <!-- Filter and Search -->
-      <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800 mb-6">
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="flex-1">
-            <div class="relative">
-              <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Search bands by name..."
-                class="w-full pl-10 pr-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white placeholder-gray-500"
-              >
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <select
-              v-model="filterGenre"
-              class="px-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white"
-            >
-              <option value="">All Genres</option>
-              <option v-for="genre in availableGenres" :key="genre" :value="genre">
-                {{ genre }}
-              </option>
-            </select>
-            <select
-              v-model="sortBy"
-              class="px-4 py-2 bg-mitchly-dark border border-gray-700 rounded-lg focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-white"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="name">Name (A-Z)</option>
-              <option value="genre">Genre</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
@@ -110,39 +82,39 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredBands.length === 0 && !searchQuery && !filterGenre" class="text-center py-12">
+      <div v-else-if="bands.length === 0" class="text-center py-12">
         <Music2 class="w-16 h-16 text-gray-500 mx-auto mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">No bands in the gallery yet</h3>
         <p class="text-gray-400 mb-6">Be the first to create an AI-generated band!</p>
         <router-link
           to="/"
-          class="inline-flex items-center gap-2 bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-6 py-3 rounded-lg transition-colors"
+          class="inline-flex items-center gap-2 bg-mitchly-blue hover:bg-mitchly-blue/80 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           <Plus class="w-5 h-5" />
           Create the First Band
         </router-link>
       </div>
 
-      <!-- No Results State -->
-      <div v-else-if="filteredBands.length === 0" class="text-center py-12">
-        <Search class="w-16 h-16 text-gray-500 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-white mb-2">No bands found</h3>
-        <p class="text-gray-400">Try adjusting your search or filters</p>
-      </div>
 
       <!-- Bands Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
-          v-for="band in filteredBands"
+          v-for="band in displayBands"
           :key="band.$id"
-          class="bg-mitchly-gray rounded-lg border border-gray-800 hover:border-mitchly-blue/30 transition-all duration-300 overflow-hidden group"
+          class="bg-mitchly-gray rounded-lg border border-gray-800 hover:border-mitchly-blue/30 transition-all duration-300 overflow-hidden group flex flex-col"
         >
-          <!-- Band Header with Gradient -->
-          <div class="relative h-32 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
-            <div class="absolute inset-0 opacity-10">
-              <div class="absolute inset-0 bg-white/10"></div>
-            </div>
-            <div class="absolute inset-0 flex items-center justify-center">
+          <!-- Band Image -->
+          <div class="relative h-48 overflow-hidden bg-gradient-to-br from-mitchly-blue to-mitchly-purple">
+            <!-- Use actual band photo if available -->
+            <img 
+              v-if="band.bandPhotoUrl || band.albumCoverUrl || band.logoUrl"
+              :src="band.bandPhotoUrl || band.albumCoverUrl || band.logoUrl"
+              :alt="band.bandName"
+              class="w-full h-full object-cover"
+              @error="handleImageError($event, band)"
+            />
+            <!-- Fallback to gradient with music icon -->
+            <div v-else class="absolute inset-0 flex items-center justify-center">
               <Music class="w-12 h-12 text-white/80" />
             </div>
             <!-- Song count badge -->
@@ -152,9 +124,12 @@
           </div>
 
           <!-- Band Info -->
-          <div class="p-4">
-            <h3 class="font-bold text-lg text-white mb-1">{{ band.bandName }}</h3>
-            <p class="text-sm text-gray-400 mb-3">{{ band.primaryGenre }}</p>
+          <div class="p-4 flex-1 flex flex-col">
+            <h3 class="font-bold text-lg text-white mb-1 truncate">{{ band.bandName }}</h3>
+            <p class="text-sm text-gray-400 mb-2">{{ band.primaryGenre }}</p>
+            
+            <!-- Band Description -->
+            <p class="text-xs text-gray-500 mb-3 line-clamp-2 flex-1">{{ band.backstory || band.coreSound || 'AI-generated band' }}</p>
             
             <!-- Meta Info -->
             <div class="flex items-center gap-4 text-xs text-gray-500 mb-4">
@@ -169,10 +144,10 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-2">
+            <div class="flex gap-2 mt-auto">
               <router-link
                 :to="`/band/${band.$id}`"
-                class="flex-1 bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold text-center py-2 rounded-lg transition-colors text-sm"
+                class="flex-1 bg-mitchly-blue hover:bg-mitchly-blue/80 text-white font-semibold text-center py-2 rounded-lg transition-colors text-sm"
               >
                 View Band
               </router-link>
@@ -193,10 +168,6 @@
             </div>
           </div>
 
-          <!-- Creation Date -->
-          <div class="px-4 py-2 bg-mitchly-darker text-xs text-gray-500 border-t border-gray-800">
-            Created {{ formatDate(band.$createdAt) }}
-          </div>
         </div>
       </div>
 
@@ -204,7 +175,7 @@
       <div v-if="hasMore && !loading" class="text-center mt-8">
         <button
           @click="loadMore"
-          class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-black font-semibold px-6 py-3 rounded-lg transition-colors"
+          class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           Load More Bands
         </button>
@@ -261,13 +232,11 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
 import {
-  Home,
   Music,
   Music2,
   Users,
   PlayCircle,
   Tag,
-  Search,
   Calendar,
   MapPin,
   Share2,
@@ -284,9 +253,6 @@ const bands = ref([]);
 const songs = ref([]);
 const loading = ref(true);
 const deleting = ref(false);
-const searchQuery = ref('');
-const filterGenre = ref('');
-const sortBy = ref('newest');
 const hasMore = ref(false);
 const deleteModal = ref({
   show: false,
@@ -304,15 +270,9 @@ const stats = computed(() => {
   };
 });
 
-const availableGenres = computed(() => {
-  const genres = bands.value
-    .map(b => (b.profileData || b).primaryGenre)
-    .filter(Boolean);
-  return [...new Set(genres)].sort();
-});
-
-const filteredBands = computed(() => {
-  let result = bands.value.map(band => {
+const displayBands = computed(() => {
+  // Map bands with their data and enrich with images
+  return bands.value.map(band => {
     const profile = band.profileData || band;
     const bandSongs = songs.value.filter(s => s.bandId === band.$id);
     
@@ -322,42 +282,13 @@ const filteredBands = computed(() => {
       $id: band.$id,
       $createdAt: band.$createdAt,
       songCount: bandSongs.length,
-      hasAudio: bandSongs.some(s => s.audioUrl)
+      hasAudio: bandSongs.some(s => s.audioUrl),
+      // Include image URLs from the band data
+      bandPhotoUrl: band.bandPhotoUrl || profile.bandPhotoUrl,
+      albumCoverUrl: band.albumCoverUrl || profile.albumCoverUrl,
+      logoUrl: band.logoUrl || profile.logoUrl
     };
-  });
-
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(band => 
-      band.bandName?.toLowerCase().includes(query) ||
-      band.primaryGenre?.toLowerCase().includes(query) ||
-      band.origin?.toLowerCase().includes(query)
-    );
-  }
-
-  // Apply genre filter
-  if (filterGenre.value) {
-    result = result.filter(band => band.primaryGenre === filterGenre.value);
-  }
-
-  // Apply sorting
-  switch (sortBy.value) {
-    case 'oldest':
-      result.sort((a, b) => new Date(a.$createdAt) - new Date(b.$createdAt));
-      break;
-    case 'name':
-      result.sort((a, b) => (a.bandName || '').localeCompare(b.bandName || ''));
-      break;
-    case 'genre':
-      result.sort((a, b) => (a.primaryGenre || '').localeCompare(b.primaryGenre || ''));
-      break;
-    case 'newest':
-    default:
-      result.sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
-  }
-
-  return result;
+  }).sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
 });
 
 // Load data
@@ -469,10 +400,23 @@ const formatDate = (dateString) => {
   
   return date.toLocaleDateString();
 };
+
+// Handle image loading errors
+const handleImageError = (event, band) => {
+  // Hide the broken image
+  event.target.style.display = 'none';
+};
 </script>
 
 <style scoped>
 .gallery {
   min-height: 100vh;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
