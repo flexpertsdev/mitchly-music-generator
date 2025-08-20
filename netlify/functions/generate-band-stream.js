@@ -196,7 +196,7 @@ Important requirements:
       };
     });
 
-    // Save band to database
+    // Save band to database with correct schema
     const bandData = {
       ...bandProfile,
       songStubs,
@@ -211,9 +211,14 @@ Important requirements:
       BANDS_COLLECTION,
       ID.unique(),
       {
-        name: bandProfile.bandName,
+        bandName: bandProfile.bandName, // Changed from 'name' to 'bandName'
+        primaryGenre: bandProfile.primaryGenre, // Added required field
         profileData: JSON.stringify(bandData),
-        createdAt: new Date().toISOString()
+        albumTitle: bandProfile.albumConcept?.title || '',
+        albumDescription: bandProfile.albumConcept?.description || '',
+        trackCount: bandProfile.trackListing?.length || 8,
+        formationYear: bandProfile.formationYear || new Date().getFullYear(),
+        origin: bandProfile.origin || ''
       }
     );
 
@@ -298,7 +303,7 @@ Important requirements:
       }
     );
 
-    // Create song records in database
+    // Create song records in database with correct schema
     if (songStubs && songStubs.length > 0) {
       for (const stub of songStubs) {
         try {
@@ -310,11 +315,11 @@ Important requirements:
               bandId: savedBand.$id,
               title: stub.title,
               trackNumber: stub.trackNumber,
-              description: stub.description,
-              musicalElements: '',
-              lyrics: '',
+              lyrics: '', // Required field, set to empty string initially
+              description: stub.description || '',
               audioUrl: null,
-              status: 'pending'
+              status: 'pending',
+              artistDescription: bandProfile.aiDescription || ''
             }
           );
         } catch (songError) {
