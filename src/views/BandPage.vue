@@ -259,11 +259,7 @@
                       <div class="flex items-center gap-2 flex-1">
                         <span class="text-gray-400 text-sm">{{ index + 1 }}.</span>
                         <span class="font-medium text-white text-sm">{{ track }}</span>
-                        <PlayCircle 
-                          v-if="getSongAudio(track)" 
-                          class="w-4 h-4 text-green-500 flex-shrink-0"
-                          title="Audio available"
-                        />
+
                       </div>
                       <ChevronDown 
                         :class="['w-4 h-4 text-gray-400 transition-transform flex-shrink-0', expandedTracks[index] ? 'rotate-180' : '']"
@@ -293,6 +289,14 @@
                           {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
                         </span>
                       </button>
+                      <button
+                        v-if="getSongAudio(track)"
+                        @click.stop="handlePlaySong(track)"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 shadow-lg hover:shadow-xl flex-1"
+                      >
+                        <PlayCircle class="w-3 h-3" />
+                        <span>Play</span>
+                      </button>
                     </div>
                   </div>
 
@@ -301,11 +305,7 @@
                     <div class="flex items-center gap-3 flex-1">
                       <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
                       <span class="font-medium text-white">{{ track }}</span>
-                      <PlayCircle 
-                        v-if="getSongAudio(track)" 
-                        class="w-5 h-5 text-green-500"
-                        title="Audio available"
-                      />
+
                     </div>
                     <div class="flex items-center gap-2">
                       <button
@@ -333,6 +333,15 @@
                         <span class="lg:hidden">
                           {{ audioGenerationStatus[track]?.status === 'processing' ? '...' : 'Audio' }}
                         </span>
+                      </button>
+                      <button
+                        v-if="getSongAudio(track)"
+                        @click.stop="handlePlaySong(track)"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 shadow-lg hover:shadow-xl"
+                      >
+                        <PlayCircle class="w-3 h-3" />
+                        <span class="hidden lg:inline">Play</span>
+                        <span class="lg:hidden">Play</span>
                       </button>
                       <!-- Expand/Collapse Icon -->
                       <ChevronDown 
@@ -379,14 +388,7 @@
             </div>
           </div>
 
-          <!-- Audio Player -->
-          <div v-if="availableAudioTracks.length > 0" class="mt-8">
-            <h3 class="text-xl font-bold mb-4 text-white">Listen Now</h3>
-            <AudioPlayer 
-              :tracks="availableAudioTracks"
-              :autoPlay="false"
-            />
-          </div>
+
         </div>
 
         <!-- Visual Tab -->
@@ -500,6 +502,29 @@
       </transition-group>
     </div>
 
+    <!-- Fixed Audio Player -->
+    <transition name="slide-up">
+      <div v-if="showAudioPlayer && currentlyPlayingTrack" class="fixed bottom-0 left-0 right-0 bg-mitchly-gray border-t border-gray-700 shadow-2xl z-40">
+        <div class="container mx-auto px-4 py-4">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-semibold text-white">Now Playing</h4>
+            <button
+              @click="showAudioPlayer = false"
+              class="text-gray-400 hover:text-white transition-colors"
+            >
+              <XCircle class="w-5 h-5" />
+            </button>
+          </div>
+          <AudioPlayer 
+            :audioUrl="currentlyPlayingTrack.audioUrl"
+            :title="currentlyPlayingTrack.title"
+            :autoplay="true"
+            @ended="showAudioPlayer = false"
+          />
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -546,6 +571,8 @@ const bandImages = ref({
   bandPhoto: null
 });
 const toasts = ref([]);
+const currentlyPlayingTrack = ref(null);
+const showAudioPlayer = ref(false);
 
 // Tabs
 const tabs = [
@@ -743,6 +770,20 @@ const showToast = (message, type = 'info') => {
     toasts.value = toasts.value.filter(t => t.id !== id);
   }, 3000);
 };
+
+const handlePlaySong = (trackTitle) => {
+  const song = songs.value.find(s => s.title === trackTitle);
+  if (!song || !song.audioUrl) return;
+  
+  currentlyPlayingTrack.value = {
+    id: song.$id,
+    title: song.title,
+    artist: bandProfile.value.bandName,
+    audioUrl: song.audioUrl,
+    duration: song.duration
+  };
+  showAudioPlayer.value = true;
+};
 </script>
 
 <style scoped>
@@ -774,5 +815,16 @@ const showToast = (message, type = 'info') => {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Slide up animation for audio player */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
 }
 </style>
