@@ -1,0 +1,277 @@
+<template>
+  <div class="home min-h-screen bg-mitchly-dark">
+    <!-- Header -->
+    <header class="bg-mitchly-darker border-b border-mitchly-gray">
+      <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="bg-mitchly-blue/20 text-mitchly-blue px-3 py-1 rounded-lg text-sm font-semibold">
+              SSE Streaming Version
+            </span>
+          </div>
+          <div class="flex gap-3">
+            <router-link 
+              to="/"
+              class="text-gray-400 hover:text-white px-4 py-2 rounded-lg transition-all"
+            >
+              Regular Version
+            </router-link>
+            <router-link 
+              to="/stream-test"
+              class="text-gray-400 hover:text-white px-4 py-2 rounded-lg transition-all"
+            >
+              Test Page
+            </router-link>
+            <router-link 
+              to="/gallery"
+              class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+            >
+              <Music4 class="w-5 h-5" />
+              Gallery
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-4 md:p-6">
+      <!-- Mitchly Logo -->
+      <div class="flex flex-col items-center mb-6 md:mb-8">
+        <img 
+          src="/ic_launcher-web.png" 
+          alt="Mitchly" 
+          class="w-24 h-24 md:w-32 md:h-32 rounded-2xl shadow-2xl mb-3 md:mb-4"
+        />
+        <h1 class="text-2xl md:text-3xl font-bold text-mitchly-blue">Music Generator</h1>
+        <p class="text-gray-400 mt-1 md:mt-2 text-sm md:text-base">Make more than music - With Real-time Streaming</p>
+      </div>
+      
+      <!-- Input Section -->
+      <ConceptInput 
+        @generate="handleGenerate" 
+        :loading="generating"
+      />
+
+      <!-- Progress Display -->
+      <div v-if="generating && progressData" class="mt-8">
+        <div class="max-w-2xl mx-auto bg-mitchly-gray rounded-xl p-6 border border-gray-800">
+          <!-- Progress Bar -->
+          <div class="mb-4">
+            <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
+              <div 
+                class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-500 ease-out"
+                :style="`width: ${progressData.progress}%`"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-2 text-center">{{ progressData.progress }}%</p>
+          </div>
+          
+          <!-- Progress Message -->
+          <div class="text-center">
+            <p class="text-lg text-white font-medium animate-pulse">
+              {{ progressData.message }}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+              Step: {{ progressData.step }}
+            </p>
+          </div>
+          
+          <!-- Progress Steps Visual -->
+          <div class="mt-6 grid grid-cols-3 md:grid-cols-9 gap-2">
+            <div 
+              v-for="step in progressSteps" 
+              :key="step.id"
+              :class="[
+                'text-center p-2 rounded-lg transition-all',
+                progressData.progress >= step.minProgress 
+                  ? 'bg-mitchly-blue/20 border border-mitchly-blue/40' 
+                  : 'bg-mitchly-dark/50 border border-gray-700'
+              ]"
+            >
+              <span class="text-lg md:text-2xl">{{ step.emoji }}</span>
+              <p class="text-xs text-gray-400 mt-1 hidden md:block">{{ step.name }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="fixed bottom-4 right-4 space-y-2 z-50">
+      <transition-group name="toast">
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          :class="`toast ${toast.type}`"
+          class="bg-mitchly-gray border border-gray-700 rounded-lg shadow-lg p-4 min-w-[300px]"
+        >
+          <div class="flex items-center gap-3">
+            <component :is="getToastIcon(toast.type)" class="w-5 h-5" />
+            <div class="flex-1">
+              <p class="font-semibold text-white">{{ toast.title }}</p>
+              <p class="text-sm text-gray-400">{{ toast.message }}</p>
+            </div>
+          </div>
+        </div>
+      </transition-group>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import ConceptInput from '../components/ConceptInput.vue';
+import { generateBandProfileSSE } from '../services/anthropic-sse';
+import { bandService, getAppwriteStatus } from '../services/appwrite';
+import { 
+  Music4, 
+  CheckCircle, 
+  XCircle,
+  AlertCircle,
+  Loader
+} from 'lucide-vue-next';
+
+const router = useRouter();
+
+// State
+const generating = ref(false);
+const progressData = ref(null);
+const recentBands = ref([]);
+const toasts = ref([]);
+const appStatus = ref({ isAvailable: true, mode: 'online' });
+
+// Progress steps for visual display
+const progressSteps = [
+  { id: 'concept', name: 'Concept', emoji: '🎸', minProgress: 0 },
+  { id: 'identity', name: 'Identity', emoji: '🎤', minProgress: 20 },
+  { id: 'story', name: 'Backstory', emoji: '📖', minProgress: 30 },
+  { id: 'visual', name: 'Visuals', emoji: '🎨', minProgress: 40 },
+  { id: 'album', name: 'Album', emoji: '💿', minProgress: 50 },
+  { id: 'tracks', name: 'Tracks', emoji: '🎵', minProgress: 60 },
+  { id: 'logo', name: 'Logo', emoji: '✨', minProgress: 70 },
+  { id: 'photos', name: 'Photos', emoji: '📸', minProgress: 80 },
+  { id: 'complete', name: 'Complete', emoji: '🎉', minProgress: 100 }
+];
+
+// Load recent bands on mount
+onMounted(async () => {
+  appStatus.value = getAppwriteStatus();
+  
+  try {
+    recentBands.value = await bandService.list(6);
+    appStatus.value = getAppwriteStatus();
+  } catch (error) {
+    console.error('Error loading recent bands:', error);
+    appStatus.value = getAppwriteStatus();
+    
+    if (!appStatus.value.isAvailable) {
+      showToast('info', 'Offline Mode', 'Database unavailable - your data will be saved locally');
+    }
+  }
+});
+
+// Handlers
+const handleGenerate = async (data) => {
+  generating.value = true;
+  progressData.value = { progress: 0, message: 'Starting...', step: 'start' };
+  
+  try {
+    let prompt = data;
+    let advancedData = null;
+    
+    // Check if data is an object (advanced mode)
+    if (typeof data === 'object' && data.prompt) {
+      prompt = data.prompt;
+      advancedData = data.advancedData;
+    }
+    
+    // Use SSE streaming version
+    const generatedBand = await generateBandProfileSSE(
+      prompt, 
+      advancedData,
+      (progress) => {
+        progressData.value = progress;
+      }
+    );
+    
+    if (generatedBand && generatedBand.$id) {
+      if (generatedBand.error) {
+        showToast('warning', 'Band Created!', 'Generated successfully but database save failed');
+      } else {
+        showToast('success', 'Band Created!', 'Your band profile has been generated with visuals');
+      }
+      
+      // Small delay to show completion
+      setTimeout(() => {
+        router.push(`/band/${generatedBand.$id}`);
+      }, 1000);
+    } else {
+      throw new Error('Band creation failed - no ID returned');
+    }
+  } catch (error) {
+    console.error('Error generating band profile:', error);
+    showToast('error', 'Generation Failed', error.message);
+  } finally {
+    generating.value = false;
+    progressData.value = null;
+  }
+};
+
+const showToast = (type, title, message) => {
+  const id = Date.now();
+  toasts.value.push({ id, type, title, message });
+  
+  setTimeout(() => {
+    const index = toasts.value.findIndex(t => t.id === id);
+    if (index > -1) {
+      toasts.value.splice(index, 1);
+    }
+  }, 5000);
+};
+
+const getToastIcon = (type) => {
+  const icons = {
+    success: CheckCircle,
+    error: XCircle,
+    warning: AlertCircle,
+    info: Loader
+  };
+  return icons[type] || AlertCircle;
+};
+</script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.toast-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.toast.success {
+  border-left: 4px solid #00E4FF;
+}
+
+.toast.error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.toast.info {
+  border-left: 4px solid #8B5CF6;
+}
+</style>
