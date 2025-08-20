@@ -1,50 +1,6 @@
 // src/services/anthropic.js
 import { ENDPOINTS } from '../config/api';
 
-class StreamingProgress {
-  constructor(onProgress) {
-    this.onProgress = onProgress;
-  }
-
-  async processStream(response) {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let result = null;
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              
-              if (data.type === 'progress' && this.onProgress) {
-                this.onProgress(data);
-              } else if (data.type === 'complete') {
-                result = data.data;
-              } else if (data.type === 'error') {
-                throw new Error(data.message);
-              }
-            } catch (e) {
-              // Skip invalid JSON
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    return result;
-  }
-}
-
 export const generateBandProfile = async (prompt, advancedData = null, onProgress = null) => {
   try {
     const response = await fetch(ENDPOINTS.generateBand, {
@@ -52,7 +8,7 @@ export const generateBandProfile = async (prompt, advancedData = null, onProgres
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ prompt, advancedData })
+      body: JSON.stringify({ conceptText: prompt, advancedData })
     });
 
     if (!response.ok) {
@@ -73,27 +29,79 @@ export const generateBandProfile = async (prompt, advancedData = null, onProgres
   }
 };
 
-// New streaming version with progress updates
+// Simulated streaming version with progress updates
 export const generateBandProfileStream = async (prompt, advancedData = null, onProgress = null) => {
   try {
-    const response = await fetch(ENDPOINTS.generateBandStream, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt, advancedData })
-    });
+    // Simulate progress updates since Netlify doesn't support true streaming
+    const progressSteps = [
+      { type: 'progress', step: 'start', message: '🎸 Starting the creative process...', progress: 5 },
+      { type: 'progress', step: 'analyzing', message: '🤔 Analyzing your musical vision...', progress: 10 },
+      { type: 'progress', step: 'band_identity', message: '🎤 Creating band identity...', progress: 20 },
+      { type: 'progress', step: 'backstory', message: '📖 Writing our origin story...', progress: 30 },
+      { type: 'progress', step: 'visual_identity', message: '🎨 Designing visual aesthetic...', progress: 40 },
+      { type: 'progress', step: 'album_concept', message: '💿 Brainstorming album concept...', progress: 50 },
+      { type: 'progress', step: 'track_listing', message: '🎵 Coming up with killer tracks...', progress: 60 },
+      { type: 'progress', step: 'generating_logo', message: '✨ Creating a wicked logo...', progress: 70 },
+      { type: 'progress', step: 'photo_shoot', message: '📸 Having our first photo shoot...', progress: 80 },
+      { type: 'progress', step: 'album_cover', message: '🎨 Designing album artwork...', progress: 90 },
+      { type: 'progress', step: 'finalizing', message: '🚀 Finalizing everything...', progress: 95 }
+    ];
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // If we have a progress callback, use streaming
+    // Start showing progress
     if (onProgress) {
-      const streaming = new StreamingProgress(onProgress);
-      return await streaming.processStream(response);
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          onProgress(progressSteps[currentStep]);
+          currentStep++;
+        }
+      }, 800); // Update every 800ms
+
+      try {
+        // Call the streaming endpoint (which is now just a regular endpoint)
+        const response = await fetch(ENDPOINTS.generateBandStream, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt, advancedData })
+        });
+
+        clearInterval(progressInterval);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Show completion
+        onProgress({ type: 'progress', step: 'complete', message: '🎉 Band profile complete!', progress: 100 });
+        
+        // Parse the profileData if it's a string
+        if (typeof data.profileData === 'string') {
+          data.profileData = JSON.parse(data.profileData);
+        }
+        
+        return data;
+      } catch (error) {
+        clearInterval(progressInterval);
+        throw error;
+      }
     } else {
-      // Fall back to regular response
+      // No progress callback, just call normally
+      const response = await fetch(ENDPOINTS.generateBandStream, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, advancedData })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       if (typeof data.profileData === 'string') {
         data.profileData = JSON.parse(data.profileData);

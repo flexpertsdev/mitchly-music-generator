@@ -9,7 +9,7 @@
             :class="[
               'px-4 sm:px-6 py-2 rounded-full font-medium transition-all text-sm sm:text-base',
               activeTab === 'simple' 
-                ? 'bg-mitchly-blue text-black font-semibold shadow-md' 
+                ? 'bg-mitchly-blue text-white font-semibold shadow-md' 
                 : 'text-gray-400 hover:text-white'
             ]"
           >
@@ -20,7 +20,7 @@
             :class="[
               'px-4 sm:px-6 py-2 rounded-full font-medium transition-all text-sm sm:text-base',
               activeTab === 'advanced' 
-                ? 'bg-mitchly-blue text-black font-semibold shadow-md' 
+                ? 'bg-mitchly-blue text-white font-semibold shadow-md' 
                 : 'text-gray-400 hover:text-white'
             ]"
           >
