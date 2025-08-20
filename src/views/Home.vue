@@ -183,23 +183,60 @@ const handleGenerate = async (data) => {
     }
     
     // Use streaming version with progress callback
-    const generatedBand = await generateBandProfileStream(
-      prompt, 
-      advancedData,
-      (progress) => {
-        progressData.value = progress;
+    let generatedBand = null;
+    
+    try {
+      generatedBand = await generateBandProfileStream(
+        prompt, 
+        advancedData,
+        (progress) => {
+          progressData.value = progress;
+        }
+      );
+    } catch (error) {
+      // Handle timeout errors (504) - the band might still have been created
+      if (error.message.includes('504')) {
+        console.log('Function timed out, checking if band was created...');
+        progressData.value = { progress: 95, message: '⏳ Function timed out, checking results...', step: 'checking' };
+        
+        // Wait a bit then check recent bands
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          // Get the most recent band
+          const recentBands = await bandService.list(1);
+          if (recentBands.length > 0) {
+            const latestBand = recentBands[0];
+            // Check if it was created recently (within last minute)
+            const createdTime = new Date(latestBand.$createdAt).getTime();
+            const now = Date.now();
+            if (now - createdTime < 60000) { // Created within last minute
+              generatedBand = latestBand;
+              console.log('Found recently created band:', latestBand.$id);
+            }
+          }
+        } catch (checkError) {
+          console.error('Error checking for recent band:', checkError);
+        }
       }
-    );
+      
+      // If not a timeout, re-throw the error
+      if (!error.message.includes('504')) {
+        throw error;
+      }
+    }
     
     if (generatedBand && generatedBand.$id) {
       showToast('success', 'Band Created!', 'Your band profile has been generated with visuals');
       
       // Small delay to show completion
+      progressData.value = { progress: 100, message: '🎉 Band profile complete!', step: 'complete' };
+      
       setTimeout(() => {
         router.push(`/band/${generatedBand.$id}`);
       }, 1000);
     } else {
-      throw new Error('Band creation failed - no ID returned');
+      throw new Error('Band creation failed - unable to retrieve band data');
     }
   } catch (error) {
     console.error('Error generating band profile:', error);

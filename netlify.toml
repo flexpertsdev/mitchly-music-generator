@@ -11,6 +11,11 @@
   # Directory where functions are stored
   directory = "netlify/functions"
 
+# Individual function settings
+[functions."generate-band-stream"]
+  # Maximum timeout is 26 seconds for background functions
+  timeout = 26
+
 # Edge Functions configuration
 [[edge_functions]]
   path = "/api/generate-band-sse"
