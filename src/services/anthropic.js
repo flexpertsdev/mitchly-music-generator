@@ -8,7 +8,7 @@ export const generateBandProfile = async (prompt, advancedData = null, onProgres
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ conceptText: prompt, advancedData })
+      body: JSON.stringify({ prompt, advancedData })
     });
 
     if (!response.ok) {

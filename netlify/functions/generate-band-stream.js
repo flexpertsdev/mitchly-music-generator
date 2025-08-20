@@ -17,7 +17,7 @@ const storage = new Storage(appwriteClient);
 const DATABASE_ID = 'mitchly-music-db';
 const BANDS_COLLECTION = 'bands';
 const SONGS_COLLECTION = 'songs';
-const BUCKET_ID = 'band-images';
+const BUCKET_ID = 'mitchly-music';
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -267,7 +267,7 @@ Important requirements:
       
       try {
         const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.buffer();
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
         
         const file = await storage.createFile(
           BUCKET_ID,
