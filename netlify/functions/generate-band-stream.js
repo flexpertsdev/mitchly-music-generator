@@ -106,9 +106,9 @@ Original prompt: ${prompt}`;
 
         // Generate band profile
         const message = await anthropic.messages.create({
-          model: "claude-3-5-haiku-20241022",
-          max_tokens: 2000,
-          temperature: 0.9,
+          model: "claude-opus-4-1-20250805",
+          max_tokens: 4000,
+          temperature: 0.7,
           system: `You are a creative music industry professional helping to create fictional band profiles.
 Create a complete band profile based on the user's concept.
 Be creative, specific, and ensure the band feels authentic and unique.
