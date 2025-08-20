@@ -261,38 +261,10 @@ Important requirements:
       }).then(r => r.json()).catch(e => null)
     ]);
 
-    // Download and upload images to Appwrite storage
-    const uploadImage = async (imageUrl, fileName) => {
-      if (!imageUrl) return null;
-      
-      try {
-        const imageResponse = await fetch(imageUrl);
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        
-        // For Node.js SDK, we need to use InputFile
-        const inputFile = InputFile.fromBuffer(imageBuffer, fileName);
-        
-        const file = await storage.createFile(
-          BUCKET_ID,
-          ID.unique(),
-          inputFile
-        );
-        
-        // Get the file URL
-        const fileUrl = `${process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${process.env.VITE_APPWRITE_PROJECT_ID || 'flexos'}`;
-        return fileUrl;
-      } catch (error) {
-        console.error(`Error uploading ${fileName}:`, error);
-        return null;
-      }
-    };
-
-    // Upload all images
-    const [logoUrl, albumCoverUrl, bandPhotoUrl] = await Promise.all([
-      uploadImage(logoResponse?.images?.[0]?.url, `${bandProfile.bandName}-logo.jpg`),
-      uploadImage(albumResponse?.images?.[0]?.url, `${bandProfile.albumConcept.title}-cover.jpg`),
-      uploadImage(photoResponse?.images?.[0]?.url, `${bandProfile.bandName}-photo.jpg`)
-    ]);
+    // Get the fal.ai URLs directly (skip uploading to Appwrite for now)
+    const logoUrl = logoResponse?.images?.[0]?.url || '';
+    const albumCoverUrl = albumResponse?.images?.[0]?.url || '';
+    const bandPhotoUrl = photoResponse?.images?.[0]?.url || '';
 
     // Update band with image URLs
     await databases.updateDocument(
