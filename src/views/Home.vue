@@ -16,16 +16,16 @@
     </header>
 
     <!-- Main Content -->
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-4 md:p-6">
       <!-- Mitchly Logo -->
-      <div class="flex flex-col items-center mb-8">
+      <div class="flex flex-col items-center mb-6 md:mb-8">
         <img 
           src="/ic_launcher-web.png" 
           alt="Mitchly" 
-          class="w-32 h-32 rounded-2xl shadow-2xl mb-4"
+          class="w-24 h-24 md:w-32 md:h-32 rounded-2xl shadow-2xl mb-3 md:mb-4"
         />
-        <h1 class="text-3xl font-bold text-mitchly-blue">Music Generator</h1>
-        <p class="text-gray-400 mt-2">Make more than music</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-mitchly-blue">Music Generator</h1>
+        <p class="text-gray-400 mt-1 md:mt-2 text-sm md:text-base">Make more than music</p>
       </div>
       
       <!-- Input Section -->
@@ -34,17 +34,46 @@
         :loading="generating"
       />
 
-      <!-- Loading State -->
-      <div v-if="generating" class="mt-8 flex items-center justify-center">
-        <div class="text-center">
-          <Loader class="w-12 h-12 text-mitchly-blue animate-spin mx-auto" />
-          <p class="mt-4 text-gray-400">Generating your band profile...</p>
-          <p class="mt-2 text-sm text-gray-500">This will take about 30 seconds...</p>
+      <!-- Progress Display -->
+      <div v-if="generating && progressData" class="mt-8">
+        <div class="max-w-2xl mx-auto bg-mitchly-gray rounded-xl p-6 border border-gray-800">
+          <!-- Progress Bar -->
+          <div class="mb-4">
+            <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
+              <div 
+                class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-500 ease-out"
+                :style="`width: ${progressData.progress}%`"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-2 text-center">{{ progressData.progress }}%</p>
+          </div>
+          
+          <!-- Progress Message -->
+          <div class="text-center">
+            <p class="text-lg text-white font-medium animate-pulse">
+              {{ progressData.message }}
+            </p>
+          </div>
+          
+          <!-- Progress Steps Visual -->
+          <div class="mt-6 grid grid-cols-3 md:grid-cols-9 gap-2">
+            <div 
+              v-for="step in progressSteps" 
+              :key="step.id"
+              :class="[
+                'text-center p-2 rounded-lg transition-all',
+                progressData.progress >= step.minProgress 
+                  ? 'bg-mitchly-blue/20 border border-mitchly-blue/40' 
+                  : 'bg-mitchly-dark/50 border border-gray-700'
+              ]"
+            >
+              <span class="text-lg md:text-2xl">{{ step.emoji }}</span>
+              <p class="text-xs text-gray-400 mt-1 hidden md:block">{{ step.name }}</p>
+            </div>
+          </div>
         </div>
       </div>
-
   
-      </div>
     </div>
 
     <!-- Toast Notifications -->
@@ -66,19 +95,16 @@
         </div>
       </transition-group>
     </div>
-  
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import ConceptInput from '../components/ConceptInput.vue';
-import { generateBandProfile } from '../services/anthropic';
+import { generateBandProfileStream } from '../services/anthropic';
 import { bandService, getAppwriteStatus } from '../services/appwrite';
-import { falAIService } from '../services/falai';
-import { storageService } from '../services/storage';
 import { 
-  Music, 
   Music4, 
   CheckCircle, 
   XCircle,
@@ -89,11 +115,24 @@ import {
 const router = useRouter();
 
 // State
-const currentBandProfile = ref(null);
 const generating = ref(false);
+const progressData = ref(null);
 const recentBands = ref([]);
 const toasts = ref([]);
 const appStatus = ref({ isAvailable: true, mode: 'online' });
+
+// Progress steps for visual display
+const progressSteps = [
+  { id: 'concept', name: 'Concept', emoji: '🎸', minProgress: 0 },
+  { id: 'identity', name: 'Identity', emoji: '🎤', minProgress: 20 },
+  { id: 'story', name: 'Backstory', emoji: '📖', minProgress: 30 },
+  { id: 'visual', name: 'Visuals', emoji: '🎨', minProgress: 40 },
+  { id: 'album', name: 'Album', emoji: '💿', minProgress: 50 },
+  { id: 'tracks', name: 'Tracks', emoji: '🎵', minProgress: 60 },
+  { id: 'logo', name: 'Logo', emoji: '✨', minProgress: 70 },
+  { id: 'photos', name: 'Photos', emoji: '📸', minProgress: 80 },
+  { id: 'complete', name: 'Complete', emoji: '🎉', minProgress: 100 }
+];
 
 // Load recent bands on mount
 onMounted(async () => {
@@ -129,73 +168,45 @@ onMounted(async () => {
 });
 
 // Handlers
-const handleGenerate = async (conceptText) => {
+const handleGenerate = async (data) => {
   generating.value = true;
+  progressData.value = { progress: 0, message: 'Starting...', step: 'start' };
   
   try {
-    // Generate band profile
-    currentBandProfile.value = await generateBandProfile(conceptText);
-    showToast('success', 'Band Created!', 'Your band profile has been generated');
+    let prompt = data;
+    let advancedData = null;
     
-    // Generate images automatically
-    showToast('info', 'Generating Visuals', 'Creating band logo, album cover, and band photo...');
-    const images = await falAIService.generateAllBandImages(currentBandProfile.value);
-    
-    // Add generated image URLs to band profile
-    if (images.logo || images.albumCover || images.bandPhoto) {
-      currentBandProfile.value.logoUrl = images.logo;
-      currentBandProfile.value.albumCoverUrl = images.albumCover;
-      currentBandProfile.value.bandPhotoUrl = images.bandPhoto;
-      showToast('success', 'Images Generated!', 'Visual assets created successfully');
+    // Check if data is an object (advanced mode)
+    if (typeof data === 'object' && data.prompt) {
+      prompt = data.prompt;
+      advancedData = data.advancedData;
     }
     
-    // Auto-save the band and navigate to profile
-    await saveBandAndNavigate();
+    // Use streaming version with progress callback
+    const generatedBand = await generateBandProfileStream(
+      prompt, 
+      advancedData,
+      (progress) => {
+        progressData.value = progress;
+      }
+    );
+    
+    if (generatedBand && generatedBand.$id) {
+      showToast('success', 'Band Created!', 'Your band profile has been generated with visuals');
+      
+      // Small delay to show completion
+      setTimeout(() => {
+        router.push(`/band/${generatedBand.$id}`);
+      }, 1000);
+    } else {
+      throw new Error('Band creation failed - no ID returned');
+    }
   } catch (error) {
     console.error('Error generating band profile:', error);
     showToast('error', 'Generation Failed', error.message);
   } finally {
     generating.value = false;
-  }
-};
-
-
-const saveBandAndNavigate = async () => {
-  if (!currentBandProfile.value) return;
-  
-  try {
-    // Create the band first
-    const band = await bandService.create(currentBandProfile.value);
-    
-    // Upload images to Appwrite storage if they exist
-    if (currentBandProfile.value.logoUrl || currentBandProfile.value.albumCoverUrl || currentBandProfile.value.bandPhotoUrl) {
-      showToast('info', 'Uploading Images', 'Saving visual assets...');
-      
-      const uploadedImages = await storageService.uploadBandImages(band.$id, {
-        logo: currentBandProfile.value.logoUrl,
-        albumCover: currentBandProfile.value.albumCoverUrl,
-        bandPhoto: currentBandProfile.value.bandPhotoUrl
-      });
-      
-      // Update band with permanent image URLs
-      if (uploadedImages.logoUrl || uploadedImages.albumCoverUrl || uploadedImages.bandPhotoUrl) {
-        await bandService.update(band.$id, {
-          logoUrl: uploadedImages.logoUrl || '',
-          albumCoverUrl: uploadedImages.albumCoverUrl || '',
-          bandPhotoUrl: uploadedImages.bandPhotoUrl || ''
-        });
-      }
-    }
-    
-    showToast('success', 'Band Saved!', 'Navigating to band profile...');
-    
-    // Navigate to the band profile page
-    setTimeout(() => {
-      router.push(`/band/${band.$id}`);
-    }, 500);
-  } catch (error) {
-    console.error('Error saving band:', error);
-    showToast('error', 'Save Failed', error.message);
+    progressData.value = null;
   }
 };
 

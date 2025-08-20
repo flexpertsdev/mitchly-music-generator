@@ -152,7 +152,7 @@ exports.handler = async (event, context) => {
   };
 
   try {
-    const { conceptText } = JSON.parse(event.body);
+    const { conceptText, advancedData } = JSON.parse(event.body);
     
     // Log incoming request
     await sendToWebhook({
@@ -195,7 +195,24 @@ exports.handler = async (event, context) => {
       apiKey: apiKey
     });
 
-    const prompt = `You are an expert music producer, songwriter, and band conceptualist. Create a comprehensive band profile and album concept based on this description: "${conceptText}"
+    // Construct the prompt based on whether we have advanced data or just concept text
+    let promptInput = conceptText;
+    if (advancedData) {
+      // Build a structured prompt from advanced form data
+      promptInput = `
+Band Name: ${advancedData.bandName || 'Create a band name'}
+Genre: ${advancedData.genre || 'Choose appropriate genre'}
+Album Title: ${advancedData.albumName || 'Create album title'}
+Number of Tracks: ${advancedData.trackCount || '8-12'}
+Influences: ${advancedData.influences || 'Choose appropriate influences'}
+Themes: ${advancedData.themes || 'Choose appropriate themes'}
+Concept: ${advancedData.concept || conceptText}
+      `.trim();
+    }
+
+    const prompt = `You are an expert music producer, songwriter, and band conceptualist. Create a comprehensive band profile and album concept based on this input:
+
+${promptInput}
 
 Create a detailed band profile with these elements:
 - Band name (creative and memorable)
@@ -208,9 +225,10 @@ Create a detailed band profile with these elements:
 - Visual identity (colors, aesthetic, logo concept)
 - Lyrical themes (5-6 themes)
 - Album concept with title and description
-- 8-10 track titles that fit the concept
+- 8-12 track titles that fit the concept and create a cohesive musical experience
 - AI description (180-200 characters for music generation platforms)
 - Production style description
+- Detailed song stubs for each track
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -243,6 +261,14 @@ Respond ONLY with valid JSON in this exact format:
     "description": "Album concept description..."
   },
   "trackListing": ["Track 1", "Track 2", "Track 3", "Track 4", "Track 5", "Track 6", "Track 7", "Track 8"],
+  "songStubs": [
+    {
+      "title": "Track Title",
+      "trackNumber": 1,
+      "description": "1-2 sentences about the song's theme/story",
+      "musicalElements": "tempo, key musical features, mood"
+    }
+  ],
   "aiDescription": "180-200 character description for AI music platforms",
   "productionStyle": "Production approach and sonic characteristics..."
 }`;
@@ -339,36 +365,56 @@ Respond ONLY with valid JSON in this exact format:
           }
         );
 
-        // Create song placeholders in database
-        if (bandProfile.trackListing && bandProfile.trackListing.length > 0) {
-          console.log('Creating song placeholders...');
-          for (let i = 0; i < bandProfile.trackListing.length; i++) {
-            const title = bandProfile.trackListing[i];
-            try {
-              await databases.createDocument(
-                DATABASE_ID,
-                SONGS_COLLECTION,
-                ID.unique(),
-                {
-                  bandId: bandDocument.$id,
-                  title: title,
-                  trackNumber: i + 1,
-                  description: `Track ${i + 1} from ${bandProfile.albumConcept?.title || 'the album'}`,
-                  lyrics: '',
-                  audioUrl: null,
-                  status: 'pending'
-                }
-              );
-            } catch (songError) {
-              console.error('Error creating song:', songError);
-            }
-          }
+     // Create song placeholders in database
+if (bandProfile.songStubs && bandProfile.songStubs.length > 0) {
+  console.log('Creating songs from detailed stubs...');
+  for (const stub of bandProfile.songStubs) {
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        SONGS_COLLECTION,
+        ID.unique(),
+        {
+          bandId: bandDocument.$id,
+          title: stub.title,
+          trackNumber: stub.trackNumber,
+          description: stub.description,
+          musicalElements: stub.musicalElements || '',
+          lyrics: '',
+          audioUrl: null,
+          status: 'pending'
         }
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        // Continue without database save
-      }
+      );
+    } catch (songError) {
+      console.error('Error creating song:', songError);
     }
+  }
+} else if (bandProfile.trackListing && bandProfile.trackListing.length > 0) {
+  // Fallback to simple track listing if no stubs
+  console.log('Creating song placeholders from track listing...');
+  for (let i = 0; i < bandProfile.trackListing.length; i++) {
+    const title = bandProfile.trackListing[i];
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        SONGS_COLLECTION,
+        ID.unique(),
+        {
+          bandId: bandDocument.$id,
+          title: title,
+          trackNumber: i + 1,
+          description: `Track ${i + 1} from ${bandProfile.albumConcept?.title || 'the album'}`,
+          musicalElements: `${bandProfile.primaryGenre} style`,
+          lyrics: '',
+          audioUrl: null,
+          status: 'pending'
+        }
+      );
+    } catch (songError) {
+      console.error('Error creating song:', songError);
+    }
+  }
+}
 
     return {
       statusCode: 200,

@@ -11,6 +11,7 @@
   # Directory where functions are stored
   directory = "netlify/functions"
 
+
 # Development server configuration
 [dev]
   port = 5142

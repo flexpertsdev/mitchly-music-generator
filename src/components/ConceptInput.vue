@@ -31,11 +31,11 @@
 
       <!-- Simple Mode -->
       <div v-if="activeTab === 'simple'" class="fade-in">
-        <div class="bg-mitchly-gray rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-800">
+        <div class="bg-mitchly-gray rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-gray-800 relative">
           <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-white">Create Your Musical Vision</h2>
           
           <div class="space-y-4 sm:space-y-6">
-            <div>
+            <div class="relative">
               <label class="block text-sm font-medium mb-2 text-gray-300">
                 Describe Your Musical Concept
               </label>
@@ -46,6 +46,13 @@
                 :placeholder="loading ? 'Generating your band profile... This may take a minute...' : 'Combine Rihanna\'s pop sensibilities with blink-182\'s punk energy and NOFX\'s ska influences...'"
               />
               
+              <!-- Loading Overlay -->
+              <div v-if="loading" class="absolute inset-0 bg-mitchly-dark/80 backdrop-blur-sm rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-8 h-8 border-2 border-white/30 border-t-mitchly-blue rounded-full animate-spin mx-auto"></div>
+                  <p class="mt-2 text-sm text-gray-300">Generating band profile...</p>
+                </div>
+              </div>
             </div>
             
             <button
@@ -139,7 +146,7 @@
               />
             </div>
             
-            <div class="sm:col-span-2">
+            <div class="sm:col-span-2 relative">
               <label class="block text-sm font-medium mb-2 text-gray-300">Musical Concept Description</label>
               <textarea
                 v-model="formData.concept"
@@ -147,6 +154,14 @@
                 class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-24 sm:h-32 text-sm sm:text-base resize-none text-white placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 :placeholder="loading ? 'Generating your band profile... This may take a minute...' : 'Describe your vision for this musical project...'"
               />
+              
+              <!-- Loading Overlay -->
+              <div v-if="loading" class="absolute inset-0 bg-mitchly-dark/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-8 h-8 border-2 border-white/30 border-t-mitchly-blue rounded-full animate-spin mx-auto"></div>
+                  <p class="mt-2 text-sm text-gray-300">Generating band profile...</p>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -201,17 +216,19 @@ export default {
     }
 
     const handleAdvancedGenerate = () => {
-      const advancedConcept = `
-Band: ${formData.value.bandName}
-Genre: ${formData.value.genre}
-Album: ${formData.value.albumName}
-Track Count: ${formData.value.trackCount}
-Influences: ${formData.value.influences}
-Themes: ${formData.value.themes}
-Concept: ${formData.value.concept}
-      `.trim()
-      
-      emit('generate', advancedConcept)
+      // Pass structured data for advanced mode
+      emit('generate', {
+        prompt: formData.value.concept || `Create a ${formData.value.genre} band called ${formData.value.bandName}`,
+        advancedData: {
+          bandName: formData.value.bandName,
+          genre: formData.value.genre,
+          albumName: formData.value.albumName,
+          trackCount: formData.value.trackCount,
+          influences: formData.value.influences,
+          themes: formData.value.themes,
+          concept: formData.value.concept
+        }
+      });
     }
 
     return {

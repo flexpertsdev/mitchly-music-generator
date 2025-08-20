@@ -23,7 +23,7 @@
     <!-- Band Profile -->
     <div v-else-if="band">
       <!-- Hero Section with Band Image -->
-      <div class="relative h-96 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
+      <div class="relative h-64 md:h-96 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
         <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-10">
           <div class="absolute inset-0 bg-white/10"></div>
@@ -31,44 +31,45 @@
 
         <!-- Band Info Overlay -->
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-          <div class="container mx-auto px-6 pb-8">
-            <div class="flex items-end gap-6">
+          <div class="container mx-auto px-4 md:px-6 pb-6 md:pb-8">
+            <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
               <!-- Band Image/Logo -->
-              <div class="w-32 h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center">
-                <Music class="w-16 h-16 text-white" />
+              <div class="w-24 h-24 md:w-32 md:h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                <Music class="w-12 h-12 md:w-16 md:h-16 text-white" />
               </div>
               
               <!-- Band Details -->
               <div class="flex-1 text-white">
-                <h1 class="text-4xl font-bold mb-2">{{ bandProfile.bandName }}</h1>
-                <p class="text-xl text-white/90">{{ bandProfile.primaryGenre }}</p>
-                <div class="flex gap-4 mt-3">
-                  <span class="text-sm text-white/70">
-                    <Calendar class="inline w-4 h-4 mr-1" />
+                <h1 class="text-2xl md:text-4xl font-bold mb-2">{{ bandProfile.bandName }}</h1>
+                <p class="text-lg md:text-xl text-white/90">{{ bandProfile.primaryGenre }}</p>
+                <div class="flex flex-wrap gap-2 md:gap-4 mt-2 md:mt-3">
+                  <span class="text-xs md:text-sm text-white/70">
+                    <Calendar class="inline w-3 h-3 md:w-4 md:h-4 mr-1" />
                     Formed {{ bandProfile.formationYear }}
                   </span>
-                  <span class="text-sm text-white/70">
-                    <MapPin class="inline w-4 h-4 mr-1" />
+                  <span class="text-xs md:text-sm text-white/70">
+                    <MapPin class="inline w-3 h-3 md:w-4 md:h-4 mr-1" />
                     {{ bandProfile.origin }}
                   </span>
                 </div>
               </div>
 
               <!-- Action Buttons -->
-              <div class="flex gap-2">
+              <div class="flex gap-2 w-full md:w-auto">
                 <button
                   @click="copyToClipboard(getBandProfileText(), 'Profile')"
-                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-3 md:px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg flex-1 md:flex-initial text-sm md:text-base"
                 >
-                  <Copy v-if="copiedMessage !== 'Profile'" class="w-5 h-5" />
-                  <CheckCircle v-else class="w-5 h-5 text-green-600" />
-                  {{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy Profile' }}
+                  <Copy v-if="copiedMessage !== 'Profile'" class="w-4 h-4 md:w-5 md:h-5" />
+                  <CheckCircle v-else class="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                  <span class="hidden sm:inline">{{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy Profile' }}</span>
+                  <span class="sm:hidden">{{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy' }}</span>
                 </button>
                 <button
                   @click="shareBand"
-                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-3 md:px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg flex-1 md:flex-initial text-sm md:text-base"
                 >
-                  <Share2 class="w-5 h-5" />
+                  <Share2 class="w-4 h-4 md:w-5 md:h-5" />
                   Share
                 </button>
               </div>
@@ -79,14 +80,14 @@
 
       <!-- Navigation Tabs -->
       <div class="bg-mitchly-darker border-b border-mitchly-gray sticky top-0 z-40">
-        <div class="container mx-auto px-6">
-          <div class="flex gap-8">
+        <div class="container mx-auto px-4 md:px-6">
+          <div class="flex gap-4 md:gap-8 overflow-x-auto scrollbar-hide">
             <button
               v-for="tab in tabs"
               :key="tab.id"
               @click="activeTab = tab.id"
               :class="[
-                'py-4 px-2 border-b-2 font-medium transition-colors',
+                'py-3 md:py-4 px-3 md:px-2 border-b-2 font-medium transition-colors whitespace-nowrap text-sm md:text-base',
                 activeTab === tab.id 
                   ? 'border-mitchly-blue text-mitchly-blue' 
                   : 'border-transparent text-gray-400 hover:text-white'
@@ -99,7 +100,7 @@
       </div>
 
       <!-- Content Sections -->
-      <div class="container mx-auto px-6 py-8">
+      <div class="container mx-auto px-4 md:px-6 py-6 md:py-8">
         <!-- Overview Tab -->
         <div v-show="activeTab === 'overview'">
           <div class="grid md:grid-cols-2 gap-8">
@@ -123,6 +124,10 @@
                 <div>
                   <dt class="text-sm text-gray-400 mb-2">Vocal Style</dt>
                   <dd class="text-white font-medium">{{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</dd>
+                </div>
+                <div>
+                  <dt class="text-sm text-gray-400 mb-2">Production Style</dt>
+                  <dd class="text-white font-medium">{{ bandProfile.productionStyle }}</dd>
                 </div>
                 <div>
                   <dt class="text-sm text-gray-400 mb-2">Influences</dt>
@@ -152,8 +157,42 @@
             </div>
           </div>
 
+          <!-- Additional Info Grid -->
+          <div class="grid md:grid-cols-2 gap-6 mt-8">
+            <!-- Band Formation Story -->
+            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
+              <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                Band Formation Story
+              </h3>
+              <div class="space-y-3 text-sm">
+                <div>
+                  <span class="text-gray-400">How we met:</span>
+                  <p class="text-gray-300 mt-1">{{ bandProfile.formationStory?.howMet }}</p>
+                </div>
+                <div>
+                  <span class="text-gray-400">Early days:</span>
+                  <p class="text-gray-300 mt-1">{{ bandProfile.formationStory?.earlyDays }}</p>
+                </div>
+                <div>
+                  <span class="text-gray-400">Breakthrough:</span>
+                  <p class="text-gray-300 mt-1">{{ bandProfile.formationStory?.breakthrough }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visual Identity Style -->
+            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
+              <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+                <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                Visual Identity Style
+              </h3>
+              <p class="text-gray-300 text-sm leading-relaxed">{{ bandProfile.visualIdentityStyle }}</p>
+            </div>
+          </div>
+
           <!-- AI Description -->
-          <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-xl p-6 mt-8 border border-mitchly-blue/30 shadow-xl">
+          <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-xl p-6 mt-6 border border-mitchly-blue/30 shadow-xl">
             <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
               <div class="w-2 h-2 bg-mitchly-blue rounded-full animate-pulse"></div>
               AI Music Platform Description
@@ -373,6 +412,28 @@
       </div>
     </div>
 
+    <!-- Toast Notifications -->
+    <div class="fixed bottom-4 right-4 left-4 md:left-auto space-y-2 z-50 pointer-events-none">
+      <transition-group name="toast">
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          :class="[
+            'bg-mitchly-gray border rounded-lg shadow-lg p-3 md:p-4 md:min-w-[250px] md:max-w-sm pointer-events-auto transition-all ml-auto',
+            toast.type === 'success' ? 'border-green-600/50' : 
+            toast.type === 'error' ? 'border-red-600/50' : 'border-gray-700'
+          ]"
+        >
+          <div class="flex items-center gap-2 md:gap-3">
+            <CheckCircle v-if="toast.type === 'success'" class="w-4 h-4 md:w-5 md:h-5 text-green-500 flex-shrink-0" />
+            <XCircle v-else-if="toast.type === 'error'" class="w-4 h-4 md:w-5 md:h-5 text-red-500 flex-shrink-0" />
+            <Music v-else class="w-4 h-4 md:w-5 md:h-5 text-mitchly-blue flex-shrink-0" />
+            <p class="text-white text-xs md:text-sm">{{ toast.message }}</p>
+          </div>
+        </div>
+      </transition-group>
+    </div>
+
   </div>
 </template>
 
@@ -417,6 +478,7 @@ const bandImages = ref({
   albumCover: null,
   bandPhoto: null
 });
+const toasts = ref([]);
 
 // Tabs
 const tabs = [
@@ -507,11 +569,11 @@ const handleGenerateSong = async (songTitle, trackNumber) => {
     // Reload songs to get updated data
     songs.value = await songService.getByBandId(band.value.$id);
     
-    // Show success
-    alert(`Song "${songTitle}" has been generated!`);
+    // Expand the track to show the generated lyrics
+    expandedTracks.value[trackNumber - 1] = true;
   } catch (error) {
     console.error('Error generating song:', error);
-    alert('Failed to generate song. Please try again.');
+    showToast('Failed to generate song. Please try again.', 'error');
   } finally {
     generatingSongIndex.value = null;
   }
@@ -523,6 +585,7 @@ const handleGenerateAudio = async (songTitle) => {
   
   try {
     audioGenerationStatus.value[songTitle] = { status: 'processing' };
+    showToast('Starting audio generation...', 'info');
     
     // Format lyrics for Mureka
     const formattedLyrics = murekaService.formatLyricsForMureka(song.lyrics);
@@ -549,12 +612,12 @@ const handleGenerateAudio = async (songTitle) => {
       songs.value = await songService.getByBandId(band.value.$id);
       
       audioGenerationStatus.value[songTitle] = { status: 'completed' };
-      alert(`Audio for "${songTitle}" is ready!`);
+      showToast(`Audio for "${songTitle}" is ready!`, 'success');
     }
   } catch (error) {
     console.error('Error generating audio:', error);
     audioGenerationStatus.value[songTitle] = { status: 'failed' };
-    alert('Failed to generate audio. Please try again.');
+    showToast('Failed to generate audio. Please try again.', 'error');
   }
 };
 
@@ -595,14 +658,49 @@ const shareBand = () => {
   } else {
     // Fallback - copy to clipboard
     navigator.clipboard.writeText(url).then(() => {
-      alert('Band link copied to clipboard!');
+      showToast('Band link copied to clipboard!', 'success');
     });
   }
+};
+
+// Toast notification system
+const showToast = (message, type = 'info') => {
+  const id = Date.now();
+  toasts.value.push({ id, message, type });
+  setTimeout(() => {
+    toasts.value = toasts.value.filter(t => t.id !== id);
+  }, 3000);
 };
 </script>
 
 <style scoped>
 .band-page {
   min-height: 100vh;
+}
+
+/* Toast animations */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.toast-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 </style>
