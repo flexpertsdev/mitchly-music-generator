@@ -3,9 +3,9 @@ const { Client, Databases, ID, Query } = require('node-appwrite');
 
 // Initialize Appwrite
 const appwriteClient = new Client()
-  .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-  .setProject(process.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df')
-  .setKey(process.env.APPWRITE_API_KEY);
+  .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+  .setProject(process.env.VITE_APPWRITE_PROJECT_ID || 'flexos')
+  .setKey(process.env.APPWRITE_API_KEY || process.env.VITE_APPWRITE_API_KEY);
 
 const databases = new Databases(appwriteClient);
 

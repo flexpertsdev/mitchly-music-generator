@@ -2,8 +2,8 @@ import { Client, Databases, Storage, ID, Query } from 'appwrite';
 
 // Initialize Appwrite client
 const client = new Client()
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df');
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || 'flexos');
 
 // Note: In browser environments, we typically use session-based auth
 // API keys should only be used in server-side environments
