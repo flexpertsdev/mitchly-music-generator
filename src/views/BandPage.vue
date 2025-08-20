@@ -24,9 +24,9 @@
     <div v-else-if="band">
       <!-- Hero Section with Band Image -->
       <div class="relative h-64 md:h-96 overflow-hidden">
-        <!-- Background Image or Gradient -->
-        <div v-if="bandImages.bandPhoto" class="absolute inset-0">
-          <img :src="bandImages.bandPhoto" :alt="bandProfile.bandName" class="w-full h-full object-cover" />
+        <!-- Background Image or Gradient (prefer album cover for hero) -->
+        <div v-if="bandImages.albumCover || bandImages.bandPhoto" class="absolute inset-0">
+          <img :src="bandImages.albumCover || bandImages.bandPhoto" :alt="bandProfile.bandName" class="w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
         </div>
         <div v-else class="absolute inset-0 bg-gradient-to-br from-mitchly-blue to-mitchly-purple">
@@ -37,45 +37,57 @@
 
         <!-- Band Info Overlay -->
         <div class="absolute inset-0 flex items-end">
-          <div class="container mx-auto px-4 md:px-6 pb-4 md:pb-8">
-            <div class="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-6">
-              <!-- Band Logo/Album Cover -->
-              <div class="flex-shrink-0">
-                <div v-if="bandImages.logo || bandImages.albumCover" class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-lg overflow-hidden shadow-2xl">
-                  <img 
-                    :src="bandImages.logo || bandImages.albumCover" 
-                    :alt="bandProfile.bandName" 
-                    class="w-full h-full object-cover"
-                  />
+          <div class="container mx-auto px-2 sm:px-4 md:px-6 pb-4 md:pb-8">
+            <!-- Back Button (Top Left) -->
+            <router-link 
+              to="/gallery"
+              class="absolute top-4 left-2 sm:left-4 md:left-6 bg-black/50 hover:bg-black/70 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-sm backdrop-blur"
+            >
+              <ChevronLeft class="w-4 h-4" />
+              <span class="hidden sm:inline">Gallery</span>
+            </router-link>
+
+            <div class="flex flex-col gap-3">
+              <!-- Main Band Info Row -->
+              <div class="flex items-end gap-3 sm:gap-4">
+                <!-- Band Logo (smaller, using logo or album cover) -->
+                <div class="flex-shrink-0">
+                  <div v-if="bandImages.logo || bandImages.albumCover" class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg overflow-hidden shadow-2xl">
+                    <img 
+                      :src="bandImages.logo || bandImages.albumCover" 
+                      :alt="bandProfile.bandName" 
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div v-else class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center">
+                    <Music class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
+                  </div>
                 </div>
-                <div v-else class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center">
-                  <Music class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-white" />
-                </div>
-              </div>
-              
-              <!-- Band Details -->
-              <div class="flex-1 min-w-0">
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 text-white truncate">{{ bandProfile.bandName }}</h1>
-                <p class="text-base sm:text-lg md:text-xl text-white/90">{{ bandProfile.primaryGenre }}</p>
-                <div class="flex flex-wrap gap-3 sm:gap-4 mt-2">
-                  <span class="text-xs sm:text-sm text-white/70">
-                    <Calendar class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                    Formed {{ bandProfile.formationYear }}
-                  </span>
-                  <span class="text-xs sm:text-sm text-white/70">
-                    <MapPin class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                    {{ bandProfile.origin }}
-                  </span>
+                
+                <!-- Band Details -->
+                <div class="flex-1 min-w-0">
+                  <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 text-white">{{ bandProfile.bandName }}</h1>
+                  <p class="text-sm sm:text-base md:text-lg text-white/90">{{ bandProfile.primaryGenre }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3 mt-1">
+                    <span class="text-xs sm:text-sm text-white/70">
+                      <Calendar class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      Formed {{ bandProfile.formationYear }}
+                    </span>
+                    <span class="text-xs sm:text-sm text-white/70">
+                      <MapPin class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      {{ bandProfile.origin }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Share Button Only -->
-              <div class="flex-shrink-0">
+              <!-- Share Button Row (separate on mobile, right-aligned) -->
+              <div class="flex justify-end">
                 <button
                   @click="shareBand"
-                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg text-sm sm:text-base"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg text-sm"
                 >
-                  <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Share2 class="w-4 h-4" />
                   <span>Share</span>
                 </button>
               </div>
@@ -86,7 +98,7 @@
 
       <!-- Navigation Tabs -->
       <div class="bg-mitchly-darker border-b border-mitchly-gray sticky top-0 z-40">
-        <div class="container mx-auto px-4 md:px-6">
+        <div class="container mx-auto px-2 sm:px-4 md:px-6">
           <div class="flex gap-4 md:gap-8 overflow-x-auto scrollbar-hide">
             <button
               v-for="tab in tabs"
@@ -106,7 +118,7 @@
       </div>
 
       <!-- Content Sections -->
-      <div class="container mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div class="container mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         <!-- Overview Tab -->
         <div v-show="activeTab === 'overview'">
           <div class="grid md:grid-cols-2 gap-8">
@@ -225,12 +237,12 @@
           </div>
 
           <!-- Track Listing -->
-          <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
-            <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+          <div class="bg-mitchly-gray rounded-xl p-3 sm:p-4 md:p-6 border border-gray-800 shadow-xl">
+            <h3 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-white flex items-center gap-2">
               <div class="w-1 h-6 bg-mitchly-blue rounded-full"></div>
               Track Listing
             </h3>
-            <div class="space-y-3">
+            <div class="space-y-2 sm:space-y-3">
               <div
                 v-for="(track, index) in bandProfile.trackListing"
                 :key="index"
@@ -238,10 +250,54 @@
               >
                 <!-- Track Header (Always Visible) -->
                 <div 
-                  class="p-4 hover:bg-mitchly-dark/50 transition-all cursor-pointer"
+                  class="p-3 sm:p-4 hover:bg-mitchly-dark/50 transition-all cursor-pointer"
                   @click="toggleTrack(index)"
                 >
-                  <div class="flex items-center justify-between">
+                  <!-- Mobile Layout: Stack elements -->
+                  <div class="sm:hidden">
+                    <div class="flex items-start justify-between mb-2">
+                      <div class="flex items-center gap-2 flex-1">
+                        <span class="text-gray-400 text-sm">{{ index + 1 }}.</span>
+                        <span class="font-medium text-white text-sm">{{ track }}</span>
+                        <PlayCircle 
+                          v-if="getSongAudio(track)" 
+                          class="w-4 h-4 text-green-500 flex-shrink-0"
+                          title="Audio available"
+                        />
+                      </div>
+                      <ChevronDown 
+                        :class="['w-4 h-4 text-gray-400 transition-transform flex-shrink-0', expandedTracks[index] ? 'rotate-180' : '']"
+                      />
+                    </div>
+                    <!-- Action Buttons (Below title on mobile) -->
+                    <div v-if="!getSongLyrics(track) || (getSongLyrics(track) && !getSongAudio(track))" class="flex gap-2 mt-2">
+                      <button
+                        v-if="!getSongLyrics(track)"
+                        @click.stop="handleGenerateSong(track, index + 1)"
+                        :disabled="generatingSongIndex === index"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+                      >
+                        <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
+                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
+                      </button>
+                      <button
+                        v-if="getSongLyrics(track) && !getSongAudio(track)"
+                        @click.stop="handleGenerateAudio(track)"
+                        :disabled="audioGenerationStatus[track]?.status === 'processing'"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+                      >
+                        <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
+                        <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>
+                          {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Desktop Layout: Side by side -->
+                  <div class="hidden sm:flex items-center justify-between">
                     <div class="flex items-center gap-3 flex-1">
                       <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
                       <span class="font-medium text-white">{{ track }}</span>
@@ -256,22 +312,26 @@
                         v-if="!getSongLyrics(track)"
                         @click.stop="handleGenerateSong(track, index + 1)"
                         :disabled="generatingSongIndex === index"
-                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
                       >
                         <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
                         <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
+                        <span class="hidden lg:inline">{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
+                        <span class="lg:hidden">{{ generatingSongIndex === index ? '...' : 'Lyrics' }}</span>
                       </button>
                       <button
                         v-if="getSongLyrics(track) && !getSongAudio(track)"
                         @click.stop="handleGenerateAudio(track)"
                         :disabled="audioGenerationStatus[track]?.status === 'processing'"
-                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
                       >
                         <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
                         <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>
+                        <span class="hidden lg:inline">
                           {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                        </span>
+                        <span class="lg:hidden">
+                          {{ audioGenerationStatus[track]?.status === 'processing' ? '...' : 'Audio' }}
                         </span>
                       </button>
                       <!-- Expand/Collapse Icon -->
@@ -281,8 +341,8 @@
                     </div>
                   </div>
                   <!-- Song Description Preview (if available) -->
-                  <div v-if="getSongDescription(track) && !expandedTracks[index]" class="mt-2 pl-11">
-                    <p class="text-sm text-gray-400 line-clamp-2">{{ getSongDescription(track) }}</p>
+                  <div v-if="getSongDescription(track) && !expandedTracks[index]" class="mt-2 pl-6 sm:pl-11">
+                    <p class="text-xs sm:text-sm text-gray-400 line-clamp-2">{{ getSongDescription(track) }}</p>
                   </div>
                 </div>
 
@@ -460,6 +520,7 @@ import {
   Share2,
   PlayCircle,
   ChevronDown,
+  ChevronLeft,
   Zap,
   Music2,
   Copy,

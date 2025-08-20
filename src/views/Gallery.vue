@@ -32,6 +32,24 @@
 
     <!-- Main Content -->
     <div class="container mx-auto p-6">
+      <!-- Filter Section -->
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl md:text-2xl font-bold text-white">Band Collection</h2>
+        <button
+          @click="showMyBandsOnly = !showMyBandsOnly"
+          :class="[
+            'flex items-center gap-2 px-4 py-2 rounded-lg transition-all border',
+            showMyBandsOnly 
+              ? 'bg-mitchly-blue text-white border-mitchly-blue' 
+              : 'bg-mitchly-gray text-gray-300 border-gray-700 hover:border-mitchly-blue/50'
+          ]"
+        >
+          <Filter class="w-4 h-4" />
+          <span class="hidden sm:inline">{{ showMyBandsOnly ? 'My Bands' : 'All Bands' }}</span>
+          <span class="sm:hidden">{{ showMyBandsOnly ? 'Mine' : 'All' }}</span>
+        </button>
+      </div>
+
       <!-- Stats Section -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
@@ -159,12 +177,20 @@
                 <Share2 class="w-4 h-4 text-gray-400" />
               </button>
               <button
+                v-if="band.isOwner"
                 @click="confirmDelete(band)"
                 class="px-3 py-2 bg-mitchly-dark hover:bg-red-900/20 rounded-lg transition-colors group/delete border border-gray-700"
                 title="Delete"
               >
                 <Trash2 class="w-4 h-4 text-gray-400 group-hover/delete:text-red-400" />
               </button>
+              <div
+                v-else
+                class="px-3 py-2 text-gray-600 cursor-not-allowed"
+                title="Created by another user"
+              >
+                <User class="w-4 h-4" />
+              </div>
             </div>
           </div>
 
@@ -243,10 +269,22 @@ import {
   Trash2,
   Plus,
   Loader,
-  AlertTriangle
+  AlertTriangle,
+  Filter,
+  User
 } from 'lucide-vue-next';
 
 const router = useRouter();
+
+// Get or create a user ID (simple implementation for now)
+const getUserId = () => {
+  let userId = localStorage.getItem('mitchly_user_id');
+  if (!userId) {
+    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('mitchly_user_id', userId);
+  }
+  return userId;
+};
 
 // State
 const bands = ref([]);
@@ -254,6 +292,8 @@ const songs = ref([]);
 const loading = ref(true);
 const deleting = ref(false);
 const hasMore = ref(false);
+const showMyBandsOnly = ref(false);
+const currentUserId = getUserId();
 const deleteModal = ref({
   show: false,
   band: null
@@ -271,8 +311,14 @@ const stats = computed(() => {
 });
 
 const displayBands = computed(() => {
+  // Filter bands based on My Bands toggle
+  let filteredBands = bands.value;
+  if (showMyBandsOnly.value) {
+    filteredBands = bands.value.filter(band => band.createdBy === currentUserId);
+  }
+  
   // Map bands with their data and enrich with images
-  return bands.value.map(band => {
+  return filteredBands.map(band => {
     const profile = band.profileData || band;
     const bandSongs = songs.value.filter(s => s.bandId === band.$id);
     
@@ -281,6 +327,8 @@ const displayBands = computed(() => {
       ...profile,
       $id: band.$id,
       $createdAt: band.$createdAt,
+      createdBy: band.createdBy,
+      isOwner: band.createdBy === currentUserId,
       songCount: bandSongs.length,
       hasAudio: bandSongs.some(s => s.audioUrl),
       // Include image URLs from the band data

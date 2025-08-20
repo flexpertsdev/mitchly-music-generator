@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { prompt, advancedData } = JSON.parse(event.body);
+    const { prompt, advancedData, userId } = JSON.parse(event.body);
     
     if (!prompt) {
       return {
@@ -218,7 +218,8 @@ Important requirements:
         albumDescription: bandProfile.albumConcept?.description || '',
         trackCount: bandProfile.trackListing?.length || 8,
         formationYear: bandProfile.formationYear || new Date().getFullYear(),
-        origin: bandProfile.origin || ''
+        origin: bandProfile.origin || '',
+        createdBy: userId || 'anonymous' // Track who created the band
       }
     );
 

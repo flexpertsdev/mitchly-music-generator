@@ -32,6 +32,9 @@ export const generateBandProfile = async (prompt, advancedData = null, onProgres
 // Simulated streaming version with progress updates
 export const generateBandProfileStream = async (prompt, advancedData = null, onProgress = null) => {
   try {
+    // Get user ID from localStorage
+    const userId = localStorage.getItem('mitchly_user_id') || 'anonymous';
+    
     // Simulate progress updates since Netlify doesn't support true streaming
     const progressSteps = [
       { type: 'progress', step: 'start', message: '🎸 Starting the creative process...', progress: 5 },
@@ -64,7 +67,7 @@ export const generateBandProfileStream = async (prompt, advancedData = null, onP
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ prompt, advancedData })
+          body: JSON.stringify({ prompt, advancedData, userId })
         });
 
         clearInterval(progressInterval);
@@ -95,7 +98,7 @@ export const generateBandProfileStream = async (prompt, advancedData = null, onP
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt, advancedData })
+        body: JSON.stringify({ prompt, advancedData, userId })
       });
 
       if (!response.ok) {
