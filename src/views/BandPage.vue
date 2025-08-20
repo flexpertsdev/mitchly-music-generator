@@ -57,7 +57,7 @@
               <!-- Share Button -->
               <button
                 @click="shareBand"
-                class="bg-mitchly-blue/10 backdrop-blur hover:bg-mitchly-blue/20 px-4 py-2 rounded-lg transition-all border border-mitchly-blue/30 flex items-center gap-2 text-mitchly-blue"
+                class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
               >
                 <Share2 class="w-5 h-5" />
                 Share
@@ -142,47 +142,76 @@
               <div
                 v-for="(track, index) in bandProfile.trackListing"
                 :key="index"
-                class="flex items-center justify-between p-3 hover:bg-mitchly-dark rounded-lg transition-colors"
+                class="border border-gray-700 rounded-lg overflow-hidden"
               >
-                <div class="flex items-center gap-3">
-                  <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
-                  <span class="font-medium text-white">{{ track }}</span>
-                  <PlayCircle 
-                    v-if="getSongAudio(track)" 
-                    class="w-5 h-5 text-green-500"
-                    title="Audio available"
-                  />
+                <!-- Track Header (Always Visible) -->
+                <div 
+                  class="p-3 hover:bg-mitchly-dark transition-colors cursor-pointer"
+                  @click="toggleTrack(index)"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 flex-1">
+                      <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
+                      <span class="font-medium text-white">{{ track }}</span>
+                      <PlayCircle 
+                        v-if="getSongAudio(track)" 
+                        class="w-5 h-5 text-green-500"
+                        title="Audio available"
+                      />
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        v-if="!getSongLyrics(track)"
+                        @click.stop="handleGenerateSong(track, index + 1)"
+                        :disabled="generatingSongIndex === index"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
+                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
+                      </button>
+                      <button
+                        v-if="getSongLyrics(track) && !getSongAudio(track)"
+                        @click.stop="handleGenerateAudio(track)"
+                        :disabled="audioGenerationStatus[track]?.status === 'processing'"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
+                        <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>
+                          {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                        </span>
+                      </button>
+                      <!-- Expand/Collapse Icon -->
+                      <ChevronDown 
+                        :class="['w-5 h-5 text-gray-400 transition-transform', expandedTracks[index] ? 'rotate-180' : '']"
+                      />
+                    </div>
+                  </div>
+                  <!-- Song Description Preview (if available) -->
+                  <div v-if="getSongDescription(track) && !expandedTracks[index]" class="mt-2 pl-11">
+                    <p class="text-sm text-gray-400 line-clamp-2">{{ getSongDescription(track) }}</p>
+                  </div>
                 </div>
-                <div class="flex gap-2">
-                  <button
-                    v-if="!getSongLyrics(track)"
-                    @click="handleGenerateSong(track, index + 1)"
-                    :disabled="generatingSongIndex === index"
-                    class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
-                  >
-                    <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
-                    <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Song' }}</span>
-                  </button>
-                  <button
-                    v-if="getSongLyrics(track) && !getSongAudio(track)"
-                    @click="handleGenerateAudio(track)"
-                    :disabled="audioGenerationStatus[track]?.status === 'processing'"
-                    class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
-                  >
-                    <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
-                    <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>
-                      {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
-                    </span>
-                  </button>
-                  <button
-                    v-if="getSongLyrics(track)"
-                    @click="showLyrics(track)"
-                    class="text-mitchly-blue hover:text-mitchly-blue/80 text-sm"
-                  >
-                    View Lyrics
-                  </button>
+
+                <!-- Expanded Content -->
+                <div v-if="expandedTracks[index]" class="border-t border-gray-700 p-4 bg-mitchly-dark/50">
+                  <!-- Song Description -->
+                  <div v-if="getSongDescription(track)" class="mb-4">
+                    <h4 class="text-sm font-semibold text-gray-300 mb-2">Song Description</h4>
+                    <p class="text-gray-400 text-sm">{{ getSongDescription(track) }}</p>
+                  </div>
+                  
+                  <!-- Lyrics -->
+                  <div v-if="getSongLyrics(track)">
+                    <h4 class="text-sm font-semibold text-gray-300 mb-2">Lyrics</h4>
+                    <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans">{{ getSongLyrics(track) }}</pre>
+                  </div>
+                  
+                  <!-- No Content Message -->
+                  <div v-if="!getSongLyrics(track) && !getSongDescription(track)" class="text-center py-4">
+                    <p class="text-gray-500 text-sm">Click "Generate Lyrics" to create content for this song</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -223,18 +252,6 @@
             </div>
           </div>
 
-          <!-- Generate Images Button -->
-          <div v-if="!bandImages.logo && !bandImages.albumCover && !bandImages.bandPhoto" class="mb-6">
-            <button
-              @click="generateBandImages"
-              :disabled="generatingImages"
-              class="w-full bg-gradient-to-r from-mitchly-purple to-mitchly-blue hover:from-mitchly-purple/80 hover:to-mitchly-blue/80 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Zap v-if="!generatingImages" class="w-5 h-5" />
-              <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>{{ generatingImages ? 'Generating Visual Assets...' : 'Generate Visual Assets with AI' }}</span>
-            </button>
-          </div>
 
           <!-- Generated Images Grid -->
           <div v-if="bandImages.logo || bandImages.albumCover || bandImages.bandPhoto" class="grid md:grid-cols-3 gap-6">
@@ -275,28 +292,6 @@
       </div>
     </div>
 
-    <!-- Lyrics Modal -->
-    <div 
-      v-if="lyricsModal.show" 
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      @click="lyricsModal.show = false"
-    >
-      <div 
-        class="bg-mitchly-gray rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto p-6 border border-gray-800"
-        @click.stop
-      >
-        <div class="flex justify-between items-start mb-4">
-          <h3 class="text-xl font-bold text-white">{{ lyricsModal.title }}</h3>
-          <button 
-            @click="lyricsModal.show = false"
-            class="text-gray-400 hover:text-white"
-          >
-            <X class="w-6 h-6" />
-          </button>
-        </div>
-        <pre class="whitespace-pre-wrap text-gray-300 font-sans">{{ lyricsModal.lyrics }}</pre>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -304,10 +299,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
-import { storageService } from '../services/storage';
 import { generateSong } from '../services/anthropic';
 import { murekaService } from '../services/mureka';
-import { falAIService } from '../services/falai';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import { 
   Music, 
@@ -317,7 +310,7 @@ import {
   MapPin, 
   Share2,
   PlayCircle,
-  X,
+  ChevronDown,
   Zap,
   Music2
 } from 'lucide-vue-next';
@@ -331,11 +324,7 @@ const songs = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const activeTab = ref('overview');
-const lyricsModal = ref({
-  show: false,
-  title: '',
-  lyrics: ''
-});
+const expandedTracks = ref({});
 const generatingSongIndex = ref(null);
 const audioGenerationStatus = ref({});
 const bandImages = ref({
@@ -343,7 +332,6 @@ const bandImages = ref({
   albumCover: null,
   bandPhoto: null
 });
-const generatingImages = ref(false);
 
 // Tabs
 const tabs = [
@@ -377,8 +365,12 @@ onMounted(async () => {
     songs.value = await songService.getByBandId(bandId);
     
     // Load saved images if they exist
-    if (band.value?.images) {
-      bandImages.value = band.value.images;
+    if (band.value) {
+      bandImages.value = {
+        logo: band.value.logoUrl || null,
+        albumCover: band.value.albumCoverUrl || null,
+        bandPhoto: band.value.bandPhotoUrl || null
+      };
     }
   } catch (err) {
     console.error('Error loading band:', err);
@@ -399,15 +391,13 @@ const getSongAudio = (trackTitle) => {
   return song?.audioUrl;
 };
 
-const showLyrics = (trackTitle) => {
+const getSongDescription = (trackTitle) => {
   const song = songs.value.find(s => s.title === trackTitle);
-  if (song) {
-    lyricsModal.value = {
-      show: true,
-      title: trackTitle,
-      lyrics: song.lyrics
-    };
-  }
+  return song?.description;
+};
+
+const toggleTrack = (index) => {
+  expandedTracks.value[index] = !expandedTracks.value[index];
 };
 
 const handleGenerateSong = async (songTitle, trackNumber) => {
@@ -464,21 +454,21 @@ const handleGenerateAudio = async (songTitle) => {
     // Format lyrics for Mureka
     const formattedLyrics = murekaService.formatLyricsForMureka(song.lyrics);
     
-    // Generate prompt from band profile
-    const prompt = murekaService.generatePromptFromProfile(bandProfile.value);
+    // Generate prompt from band profile and song description
+    const prompt = `${bandProfile.value.primaryGenre} style, ${bandProfile.value.vocalStyle?.type || bandProfile.value.vocalStyle}. ${bandProfile.value.coreSound}. Song: "${songTitle}". ${song.description || ''}`;
     
-    // Start audio generation
-    const task = await murekaService.generateAudio(formattedLyrics, prompt);
+    // Start audio generation using the new API format
+    const task = await murekaService.generateAudio(songTitle, prompt, formattedLyrics);
     
     // Poll for completion
-    const result = await murekaService.pollForCompletion(task.taskId, null, 60, 5000);
+    const result = await murekaService.pollAudioGeneration(task.taskId, (status) => {
+      console.log('Audio generation progress:', status);
+    });
     
-    if (result.songs && result.songs.length > 0) {
-      const generatedSong = result.songs[0];
-      
+    if (result.audioUrl) {
       // Update song with audio URL
       await songService.update(song.$id, {
-        audioUrl: generatedSong.audioUrl,
+        audioUrl: result.audioUrl,
         murekaTaskId: task.taskId
       });
       
@@ -495,39 +485,6 @@ const handleGenerateAudio = async (songTitle) => {
   }
 };
 
-const generateBandImages = async () => {
-  generatingImages.value = true;
-  
-  try {
-    // Generate images with fal.ai
-    const images = await falAIService.generateAllBandImages(bandProfile.value);
-    
-    if (images.logo || images.albumCover || images.bandPhoto) {
-      // Upload images to Appwrite Storage and get permanent URLs
-      const uploadedImages = await storageService.uploadBandImages(band.value.$id, images);
-      
-      // Update local state with uploaded URLs
-      bandImages.value = uploadedImages;
-      
-      // Update band document with permanent image URLs
-      await bandService.update(band.value.$id, {
-        logoUrl: uploadedImages.logoUrl || '',
-        albumCoverUrl: uploadedImages.albumCoverUrl || '',
-        bandPhotoUrl: uploadedImages.bandPhotoUrl || '',
-        images: uploadedImages // Store all URLs in a JSON field
-      });
-      
-      alert('Visual assets generated and saved successfully!');
-    } else {
-      alert('Image generation requires Fal.ai API key configuration');
-    }
-  } catch (error) {
-    console.error('Error generating images:', error);
-    alert('Failed to generate images. Please try again.');
-  } finally {
-    generatingImages.value = false;
-  }
-};
 
 const shareBand = () => {
   const url = window.location.href;

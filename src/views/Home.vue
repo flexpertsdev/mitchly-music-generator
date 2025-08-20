@@ -3,15 +3,10 @@
     <!-- Header -->
     <header class="bg-mitchly-darker border-b border-mitchly-gray">
       <div class="container mx-auto px-6 py-4">
-        <div class="flex justify-between items-center">
-          <div class="text-center flex-1">
-            <div class="text-mitchly-blue text-4xl font-bold mb-2">MITCHLY</div>
-            <h1 class="text-2xl font-bold text-white">Music Generator</h1>
-            <p class="text-gray-400 mt-1">AI-Powered Band & Song Creation Suite</p>
-          </div>
+        <div class="flex justify-end">
           <router-link 
             to="/gallery"
-            class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2 absolute right-6"
+            class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
           >
             <Music4 class="w-5 h-5" />
             Gallery
@@ -22,6 +17,17 @@
 
     <!-- Main Content -->
     <div class="container mx-auto p-6">
+      <!-- Mitchly Logo -->
+      <div class="flex flex-col items-center mb-8">
+        <img 
+          src="/ic_launcher-web.png" 
+          alt="Mitchly" 
+          class="w-32 h-32 rounded-2xl shadow-2xl mb-4"
+        />
+        <h1 class="text-3xl font-bold text-mitchly-blue">Music Generator</h1>
+        <p class="text-gray-400 mt-2">Make more than music</p>
+      </div>
+      
       <!-- Input Section -->
       <ConceptInput 
         @generate="handleGenerate" 
@@ -101,6 +107,8 @@ import { useRouter } from 'vue-router';
 import ConceptInput from '../components/ConceptInput.vue';
 import { generateBandProfile } from '../services/anthropic';
 import { bandService, getAppwriteStatus } from '../services/appwrite';
+import { falAIService } from '../services/falai';
+import { storageService } from '../services/storage';
 import { 
   Music, 
   Music4, 
@@ -157,8 +165,21 @@ const handleGenerate = async (conceptText) => {
   generating.value = true;
   
   try {
+    // Generate band profile
     currentBandProfile.value = await generateBandProfile(conceptText);
     showToast('success', 'Band Created!', 'Your band profile has been generated');
+    
+    // Generate images automatically
+    showToast('info', 'Generating Visuals', 'Creating band logo, album cover, and band photo...');
+    const images = await falAIService.generateAllBandImages(currentBandProfile.value);
+    
+    // Add generated image URLs to band profile
+    if (images.logo || images.albumCover || images.bandPhoto) {
+      currentBandProfile.value.logoUrl = images.logo;
+      currentBandProfile.value.albumCoverUrl = images.albumCover;
+      currentBandProfile.value.bandPhotoUrl = images.bandPhoto;
+      showToast('success', 'Images Generated!', 'Visual assets created successfully');
+    }
     
     // Auto-save the band and navigate to profile
     await saveBandAndNavigate();
@@ -175,7 +196,28 @@ const saveBandAndNavigate = async () => {
   if (!currentBandProfile.value) return;
   
   try {
+    // Create the band first
     const band = await bandService.create(currentBandProfile.value);
+    
+    // Upload images to Appwrite storage if they exist
+    if (currentBandProfile.value.logoUrl || currentBandProfile.value.albumCoverUrl || currentBandProfile.value.bandPhotoUrl) {
+      showToast('info', 'Uploading Images', 'Saving visual assets...');
+      
+      const uploadedImages = await storageService.uploadBandImages(band.$id, {
+        logo: currentBandProfile.value.logoUrl,
+        albumCover: currentBandProfile.value.albumCoverUrl,
+        bandPhoto: currentBandProfile.value.bandPhotoUrl
+      });
+      
+      // Update band with permanent image URLs
+      if (uploadedImages.logoUrl || uploadedImages.albumCoverUrl || uploadedImages.bandPhotoUrl) {
+        await bandService.update(band.$id, {
+          logoUrl: uploadedImages.logoUrl || '',
+          albumCoverUrl: uploadedImages.albumCoverUrl || '',
+          bandPhotoUrl: uploadedImages.bandPhotoUrl || ''
+        });
+      }
+    }
     
     showToast('success', 'Band Saved!', 'Navigating to band profile...');
     

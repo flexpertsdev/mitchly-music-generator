@@ -41,12 +41,11 @@
               </label>
               <textarea
                 v-model="conceptText"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg sm:rounded-xl px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-32 sm:h-40 text-sm sm:text-base resize-none text-white placeholder-gray-500"
-                placeholder="I'll create a comprehensive musical project combining Rihanna's pop sensibilities with blink-182's punk energy and NOFX's ska influences..."
+                :disabled="loading"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg sm:rounded-xl px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-32 sm:h-40 text-sm sm:text-base resize-none text-white placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                :placeholder="loading ? 'Generating your band profile... This may take a minute...' : 'Combine Rihanna\'s pop sensibilities with blink-182\'s punk energy and NOFX\'s ska influences...'"
               />
-              <p class="text-gray-400 text-xs sm:text-sm mt-2">
-                Describe your vision, influences, genre, themes, or any specific elements you want included.
-              </p>
+              
             </div>
             
             <button
@@ -73,7 +72,8 @@
               <input
                 type="text"
                 v-model="formData.bandName"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500"
+                :disabled="loading"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent text-sm sm:text-base text-white placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your band name"
               />
             </div>
@@ -143,8 +143,9 @@
               <label class="block text-sm font-medium mb-2 text-gray-300">Musical Concept Description</label>
               <textarea
                 v-model="formData.concept"
-                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-24 sm:h-32 text-sm sm:text-base resize-none text-white placeholder-gray-500"
-                placeholder="Describe your vision for this musical project..."
+                :disabled="loading"
+                class="w-full bg-mitchly-dark border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-mitchly-blue focus:border-transparent h-24 sm:h-32 text-sm sm:text-base resize-none text-white placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                :placeholder="loading ? 'Generating your band profile... This may take a minute...' : 'Describe your vision for this musical project...'"
               />
             </div>
           </div>
