@@ -1,6 +1,6 @@
 // Mureka AI audio generation service
 
-export async function generateAudio(songTitle, songDescription, lyrics) {
+export async function generateAudio(songTitle, songDescription, lyrics, songId = null) {
   try {
     // Combine description and title for the prompt
     const prompt = `${songDescription}. Song: "${songTitle}"`;
@@ -14,7 +14,8 @@ export async function generateAudio(songTitle, songDescription, lyrics) {
         lyrics,
         prompt,
         model: 'mureka-o1',
-        stream: false
+        stream: false,
+        songId // Add songId to the request
       })
     });
 
@@ -25,7 +26,7 @@ export async function generateAudio(songTitle, songDescription, lyrics) {
 
     const result = await response.json();
     return {
-      taskId: result.taskId,
+      taskId: result.id,
       status: result.status,
       createdAt: result.createdAt
     };
@@ -35,14 +36,14 @@ export async function generateAudio(songTitle, songDescription, lyrics) {
   }
 }
 
-export async function checkAudioStatus(taskId) {
+export async function checkAudioStatus(taskId, songId = null) {
   try {
     const response = await fetch('/.netlify/functions/check-audio-status', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ taskId })
+      body: JSON.stringify({ taskId, songId })
     });
 
     if (!response.ok) {
@@ -64,7 +65,7 @@ export async function checkAudioStatus(taskId) {
 }
 
 // Poll for audio completion
-export async function pollAudioGeneration(taskId, onProgress) {
+export async function pollAudioGeneration(taskId, onProgress, songId = null) {
   const maxAttempts = 60; // 5 minutes max (5 second intervals)
   let attempts = 0;
   
@@ -79,7 +80,7 @@ export async function pollAudioGeneration(taskId, onProgress) {
       }
       
       try {
-        const status = await checkAudioStatus(taskId);
+        const status = await checkAudioStatus(taskId, songId);
         
         if (onProgress) {
           onProgress(status);

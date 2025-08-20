@@ -600,21 +600,16 @@ const handleGenerateAudio = async (songTitle) => {
     const prompt = `${bandProfile.value.primaryGenre} style, ${bandProfile.value.vocalStyle?.type || bandProfile.value.vocalStyle}. ${bandProfile.value.coreSound}. Song: "${songTitle}". ${song.description || ''}`;
     
     // Start audio generation using the new API format
-    const task = await murekaService.generateAudio(songTitle, prompt, formattedLyrics);
+    const task = await murekaService.generateAudio(songTitle, prompt, formattedLyrics, song.$id);
     
     // Poll for completion
     const result = await murekaService.pollAudioGeneration(task.taskId, (status) => {
       console.log('Audio generation progress:', status);
-    });
+    }, song.$id);
     
     if (result.audioUrl) {
-      // Update song with audio URL
-      await songService.update(song.$id, {
-        audioUrl: result.audioUrl,
-        murekaTaskId: task.taskId
-      });
-      
-      // Reload songs
+      // The check-audio-status function already updates the song in the database
+      // Just reload songs to get the updated data
       songs.value = await songService.getByBandId(band.value.$id);
       
       audioGenerationStatus.value[songTitle] = { status: 'completed' };
