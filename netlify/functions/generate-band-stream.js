@@ -2,7 +2,7 @@
 // Actual streaming isn't supported by Netlify Functions, so we'll use polling instead
 
 const Anthropic = require('@anthropic-ai/sdk');
-const { Client, Databases, Storage, ID } = require('node-appwrite');
+const { Client, Databases, Storage, ID, InputFile } = require('node-appwrite');
 
 // Initialize Appwrite
 const appwriteClient = new Client()
@@ -269,10 +269,13 @@ Important requirements:
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
         
+        // For Node.js SDK, we need to use InputFile
+        const inputFile = InputFile.fromBuffer(imageBuffer, fileName);
+        
         const file = await storage.createFile(
           BUCKET_ID,
           ID.unique(),
-          imageBuffer
+          inputFile
         );
         
         // Get the file URL
