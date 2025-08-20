@@ -1,0 +1,21 @@
+# Netlify Environment Variables Template
+# Copy these exact key names to Netlify Dashboard
+# Site Settings > Environment Variables > Import from .env file
+
+# IMPORTANT: Replace the placeholder values with your actual API keys
+
+# Frontend/Public Variables (exposed to browser)
+VITE_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
+VITE_APPWRITE_PROJECT_ID=flexos
+VITE_APPWRITE_DATABASE_ID=mitchly-music-db
+VITE_MUREKA_API_KEY=your_mureka_api_key_here
+
+# Backend/Secret Variables (server-side only) 
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+FAL_API_KEY=your_fal_api_key_here
+APPWRITE_API_KEY=your_appwrite_server_api_key_here
+
+# Optional - for backward compatibility
+VITE_ANTHROPIC_API_KEY=your_anthropic_api_key_here
+VITE_FAL_API_KEY=your_fal_api_key_here
+VITE_APPWRITE_API_KEY=your_appwrite_server_api_key_here
