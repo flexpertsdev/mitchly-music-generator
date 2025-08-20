@@ -54,14 +54,24 @@
                 </div>
               </div>
 
-              <!-- Share Button -->
-              <button
-                @click="shareBand"
-                class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
-              >
-                <Share2 class="w-5 h-5" />
-                Share
-              </button>
+              <!-- Action Buttons -->
+              <div class="flex gap-2">
+                <button
+                  @click="copyToClipboard(getBandProfileText(), 'Profile')"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
+                >
+                  <Copy v-if="copiedMessage !== 'Profile'" class="w-5 h-5" />
+                  <CheckCircle v-else class="w-5 h-5 text-green-600" />
+                  {{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy Profile' }}
+                </button>
+                <button
+                  @click="shareBand"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-semibold shadow-lg"
+                >
+                  <Share2 class="w-5 h-5" />
+                  Share
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -94,59 +104,96 @@
         <div v-show="activeTab === 'overview'">
           <div class="grid md:grid-cols-2 gap-8">
             <!-- About -->
-            <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
-              <h2 class="text-xl font-bold mb-4 text-white">About</h2>
-              <p class="text-gray-300 mb-4">{{ bandProfile.backstory }}</p>
-              <p class="text-gray-300">{{ bandProfile.coreSound }}</p>
+            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
+              <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                <div class="w-1 h-6 bg-mitchly-blue rounded-full"></div>
+                About
+              </h2>
+              <p class="text-gray-300 mb-4 leading-relaxed">{{ bandProfile.backstory }}</p>
+              <p class="text-gray-300 leading-relaxed">{{ bandProfile.coreSound }}</p>
             </div>
 
             <!-- Details -->
-            <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
-              <h2 class="text-xl font-bold mb-4 text-white">Details</h2>
-              <dl class="space-y-3">
+            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
+              <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                <div class="w-1 h-6 bg-mitchly-purple rounded-full"></div>
+                Details
+              </h2>
+              <dl class="space-y-4">
                 <div>
-                  <dt class="text-sm text-gray-400">Vocal Style</dt>
-                  <dd class="text-white">{{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</dd>
+                  <dt class="text-sm text-gray-400 mb-2">Vocal Style</dt>
+                  <dd class="text-white font-medium">{{ bandProfile.vocalStyle?.type || bandProfile.vocalStyle }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm text-gray-400">Influences</dt>
-                  <dd class="text-white">{{ bandProfile.influences?.join(', ') }}</dd>
+                  <dt class="text-sm text-gray-400 mb-2">Influences</dt>
+                  <dd class="flex flex-wrap gap-2">
+                    <Chip 
+                      v-for="(influence, idx) in bandProfile.influences"
+                      :key="idx"
+                      :variant="getChipVariant(idx)"
+                    >
+                      {{ influence }}
+                    </Chip>
+                  </dd>
                 </div>
                 <div>
-                  <dt class="text-sm text-gray-400">Themes</dt>
-                  <dd class="text-white">{{ bandProfile.lyricalThemes?.join(', ') }}</dd>
+                  <dt class="text-sm text-gray-400 mb-2">Lyrical Themes</dt>
+                  <dd class="flex flex-wrap gap-2">
+                    <Chip 
+                      v-for="(theme, idx) in bandProfile.lyricalThemes"
+                      :key="idx"
+                      :variant="getChipVariant(idx + 3)"
+                    >
+                      {{ theme }}
+                    </Chip>
+                  </dd>
                 </div>
               </dl>
             </div>
           </div>
 
           <!-- AI Description -->
-          <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-lg p-6 mt-8 border border-gray-800">
-            <h3 class="font-semibold mb-2 text-white">AI Music Platform Description</h3>
-            <p class="text-gray-300">{{ bandProfile.aiDescription }}</p>
+          <div class="bg-gradient-to-r from-mitchly-blue/10 to-mitchly-purple/10 rounded-xl p-6 mt-8 border border-mitchly-blue/30 shadow-xl">
+            <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+              <div class="w-2 h-2 bg-mitchly-blue rounded-full animate-pulse"></div>
+              AI Music Platform Description
+            </h3>
+            <p class="text-gray-300 leading-relaxed">{{ bandProfile.aiDescription }}</p>
           </div>
         </div>
 
         <!-- Music Tab -->
         <div v-show="activeTab === 'music'">
           <!-- Album Info -->
-          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800 mb-8">
-            <h2 class="text-2xl font-bold mb-2 text-white">{{ bandProfile.albumConcept?.title }}</h2>
-            <p class="text-gray-300">{{ bandProfile.albumConcept?.description }}</p>
+          <div class="bg-gradient-to-br from-mitchly-gray to-mitchly-dark rounded-xl p-6 border border-gray-800 mb-8 shadow-xl">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h2 class="text-2xl font-bold mb-3 text-white flex items-center gap-3">
+                  <div class="w-12 h-12 bg-mitchly-purple/20 rounded-lg flex items-center justify-center">
+                    <Music class="w-6 h-6 text-mitchly-purple" />
+                  </div>
+                  {{ bandProfile.albumConcept?.title }}
+                </h2>
+                <p class="text-gray-300 leading-relaxed">{{ bandProfile.albumConcept?.description }}</p>
+              </div>
+            </div>
           </div>
 
           <!-- Track Listing -->
-          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
-            <h3 class="text-xl font-bold mb-4 text-white">Track Listing</h3>
+          <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 shadow-xl">
+            <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+              <div class="w-1 h-6 bg-mitchly-blue rounded-full"></div>
+              Track Listing
+            </h3>
             <div class="space-y-3">
               <div
                 v-for="(track, index) in bandProfile.trackListing"
                 :key="index"
-                class="border border-gray-700 rounded-lg overflow-hidden"
+                class="border border-gray-700 rounded-lg overflow-hidden hover:border-mitchly-blue/50 transition-all duration-300 bg-mitchly-dark/30"
               >
                 <!-- Track Header (Always Visible) -->
                 <div 
-                  class="p-3 hover:bg-mitchly-dark transition-colors cursor-pointer"
+                  class="p-4 hover:bg-mitchly-dark/50 transition-all cursor-pointer"
                   @click="toggleTrack(index)"
                 >
                   <div class="flex items-center justify-between">
@@ -164,7 +211,7 @@
                         v-if="!getSongLyrics(track)"
                         @click.stop="handleGenerateSong(track, index + 1)"
                         :disabled="generatingSongIndex === index"
-                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
                       >
                         <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
                         <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -174,7 +221,7 @@
                         v-if="getSongLyrics(track) && !getSongAudio(track)"
                         @click.stop="handleGenerateAudio(track)"
                         :disabled="audioGenerationStatus[track]?.status === 'processing'"
-                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
                       >
                         <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
                         <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -195,7 +242,7 @@
                 </div>
 
                 <!-- Expanded Content -->
-                <div v-if="expandedTracks[index]" class="border-t border-gray-700 p-4 bg-mitchly-dark/50">
+                <div v-if="expandedTracks[index]" class="border-t border-gray-700 p-6 bg-mitchly-dark/70">
                   <!-- Song Description -->
                   <div v-if="getSongDescription(track)" class="mb-4">
                     <h4 class="text-sm font-semibold text-gray-300 mb-2">Song Description</h4>
@@ -204,8 +251,18 @@
                   
                   <!-- Lyrics -->
                   <div v-if="getSongLyrics(track)">
-                    <h4 class="text-sm font-semibold text-gray-300 mb-2">Lyrics</h4>
-                    <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans">{{ getSongLyrics(track) }}</pre>
+                    <div class="flex items-center justify-between mb-3">
+                      <h4 class="text-sm font-semibold text-gray-300">Lyrics</h4>
+                      <button
+                        @click="copyToClipboard(getSongLyricsForMureka(songs.find(s => s.title === track)), 'Lyrics')"
+                        class="bg-green-600/20 hover:bg-green-600/30 px-3 py-1 rounded-lg text-xs transition-all flex items-center gap-1 text-green-400 border border-green-600/30"
+                      >
+                        <Copy v-if="copiedMessage !== 'Lyrics'" class="w-3 h-3" />
+                        <CheckCircle v-else class="w-3 h-3" />
+                        {{ copiedMessage === 'Lyrics' ? 'Copied!' : 'Copy for Mureka.ai' }}
+                      </button>
+                    </div>
+                    <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans bg-mitchly-dark/50 p-4 rounded-lg border border-gray-700">{{ getSongLyrics(track) }}</pre>
                   </div>
                   
                   <!-- No Content Message -->
@@ -230,24 +287,39 @@
         <!-- Visual Tab -->
         <div v-show="activeTab === 'visual'">
           <!-- Visual Identity Description -->
-          <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800 mb-6">
-            <h2 class="text-xl font-bold mb-4 text-white">Visual Identity</h2>
+          <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800 mb-6 shadow-xl">
+            <h2 class="text-xl font-bold mb-6 text-white flex items-center gap-2">
+              <div class="w-1 h-6 bg-mitchly-purple rounded-full"></div>
+              Visual Identity
+            </h2>
             <div class="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 class="font-semibold mb-2 text-white">Colors</h3>
-                <p class="text-gray-300">{{ bandProfile.visualIdentity?.colors }}</p>
+              <div class="bg-mitchly-dark/50 rounded-lg p-4 border border-gray-700">
+                <h3 class="font-semibold mb-2 text-white flex items-center gap-2">
+                  <div class="w-2 h-2 bg-mitchly-blue rounded-full"></div>
+                  Colors
+                </h3>
+                <p class="text-gray-300 text-sm leading-relaxed">{{ bandProfile.visualIdentity?.colors }}</p>
               </div>
-              <div>
-                <h3 class="font-semibold mb-2 text-white">Aesthetic</h3>
-                <p class="text-gray-300">{{ bandProfile.visualIdentity?.aesthetic }}</p>
+              <div class="bg-mitchly-dark/50 rounded-lg p-4 border border-gray-700">
+                <h3 class="font-semibold mb-2 text-white flex items-center gap-2">
+                  <div class="w-2 h-2 bg-mitchly-purple rounded-full"></div>
+                  Aesthetic
+                </h3>
+                <p class="text-gray-300 text-sm leading-relaxed">{{ bandProfile.visualIdentity?.aesthetic }}</p>
               </div>
-              <div>
-                <h3 class="font-semibold mb-2 text-white">Logo Concept</h3>
-                <p class="text-gray-300">{{ bandProfile.visualIdentity?.logo }}</p>
+              <div class="bg-mitchly-dark/50 rounded-lg p-4 border border-gray-700">
+                <h3 class="font-semibold mb-2 text-white flex items-center gap-2">
+                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Logo Concept
+                </h3>
+                <p class="text-gray-300 text-sm leading-relaxed">{{ bandProfile.visualIdentity?.logo }}</p>
               </div>
-              <div>
-                <h3 class="font-semibold mb-2 text-white">Overall Style</h3>
-                <p class="text-gray-300">{{ bandProfile.visualIdentity?.style }}</p>
+              <div class="bg-mitchly-dark/50 rounded-lg p-4 border border-gray-700">
+                <h3 class="font-semibold mb-2 text-white flex items-center gap-2">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  Overall Style
+                </h3>
+                <p class="text-gray-300 text-sm leading-relaxed">{{ bandProfile.visualIdentity?.style }}</p>
               </div>
             </div>
           </div>
@@ -256,34 +328,43 @@
           <!-- Generated Images Grid -->
           <div v-if="bandImages.logo || bandImages.albumCover || bandImages.bandPhoto" class="grid md:grid-cols-3 gap-6">
             <!-- Band Logo -->
-            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
-              <h3 class="font-semibold mb-3 text-white">Band Logo</h3>
+            <div class="bg-mitchly-gray rounded-xl p-4 border border-gray-800 shadow-xl hover:shadow-2xl transition-all">
+              <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+                <div class="w-2 h-2 bg-mitchly-blue rounded-full"></div>
+                Band Logo
+              </h3>
               <div v-if="bandImages.logo" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
                 <img :src="bandImages.logo" :alt="`${bandProfile.bandName} logo`" class="w-full h-full object-cover" />
               </div>
-              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+              <div v-else class="aspect-square rounded-lg bg-gradient-to-br from-mitchly-dark to-mitchly-gray flex items-center justify-center border border-gray-700">
                 <Music class="w-12 h-12 text-gray-600" />
               </div>
             </div>
 
             <!-- Album Cover -->
-            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
-              <h3 class="font-semibold mb-3 text-white">Album Cover</h3>
+            <div class="bg-mitchly-gray rounded-xl p-4 border border-gray-800 shadow-xl hover:shadow-2xl transition-all">
+              <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+                <div class="w-2 h-2 bg-mitchly-purple rounded-full"></div>
+                Album Cover
+              </h3>
               <div v-if="bandImages.albumCover" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
                 <img :src="bandImages.albumCover" :alt="`${bandProfile.albumConcept?.title} cover`" class="w-full h-full object-cover" />
               </div>
-              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+              <div v-else class="aspect-square rounded-lg bg-gradient-to-br from-mitchly-dark to-mitchly-gray flex items-center justify-center border border-gray-700">
                 <Music class="w-12 h-12 text-gray-600" />
               </div>
             </div>
 
             <!-- Band Photo -->
-            <div class="bg-mitchly-gray rounded-lg p-4 border border-gray-800">
-              <h3 class="font-semibold mb-3 text-white">Band Photo</h3>
+            <div class="bg-mitchly-gray rounded-xl p-4 border border-gray-800 shadow-xl hover:shadow-2xl transition-all">
+              <h3 class="font-semibold mb-3 text-white flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                Band Photo
+              </h3>
               <div v-if="bandImages.bandPhoto" class="aspect-square rounded-lg overflow-hidden bg-mitchly-dark">
                 <img :src="bandImages.bandPhoto" :alt="`${bandProfile.bandName} photo`" class="w-full h-full object-cover" />
               </div>
-              <div v-else class="aspect-square rounded-lg bg-mitchly-dark flex items-center justify-center">
+              <div v-else class="aspect-square rounded-lg bg-gradient-to-br from-mitchly-dark to-mitchly-gray flex items-center justify-center border border-gray-700">
                 <Music class="w-12 h-12 text-gray-600" />
               </div>
             </div>
@@ -302,6 +383,7 @@ import { bandService, songService } from '../services/appwrite';
 import { generateSong } from '../services/anthropic';
 import { murekaService } from '../services/mureka';
 import AudioPlayer from '../components/AudioPlayer.vue';
+import Chip from '../components/Chip.vue';
 import { 
   Music, 
   Loader, 
@@ -312,7 +394,9 @@ import {
   PlayCircle,
   ChevronDown,
   Zap,
-  Music2
+  Music2,
+  Copy,
+  CheckCircle
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -327,6 +411,7 @@ const activeTab = ref('overview');
 const expandedTracks = ref({});
 const generatingSongIndex = ref(null);
 const audioGenerationStatus = ref({});
+const copiedMessage = ref('');
 const bandImages = ref({
   logo: null,
   albumCover: null,
@@ -485,6 +570,29 @@ const handleGenerateAudio = async (songTitle) => {
   }
 };
 
+
+const copyToClipboard = async (text, type = 'Profile') => {
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedMessage.value = type;
+    setTimeout(() => copiedMessage.value = '', 2000);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
+};
+
+const getBandProfileText = () => {
+  return `Band: ${bandProfile.value.bandName}\nGenre: ${bandProfile.value.primaryGenre}\nInfluences: ${bandProfile.value.influences?.join(', ')}\nThemes: ${bandProfile.value.lyricalThemes?.join(', ')}\n\n${bandProfile.value.backstory}\n\nAlbum: ${bandProfile.value.albumConcept?.title}\n${bandProfile.value.albumConcept?.description}`;
+};
+
+const getSongLyricsForMureka = (song) => {
+  return `Title: ${song.title}\n\n${song.lyrics || 'No lyrics generated yet'}`;
+};
+
+const getChipVariant = (index) => {
+  const variants = ['primary', 'secondary', 'success', 'warning', 'danger', 'info'];
+  return variants[index % variants.length];
+};
 
 const shareBand = () => {
   const url = window.location.href;
