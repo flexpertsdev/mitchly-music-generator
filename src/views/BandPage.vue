@@ -23,54 +23,60 @@
     <!-- Band Profile -->
     <div v-else-if="band">
       <!-- Hero Section with Band Image -->
-      <div class="relative h-64 md:h-96 bg-gradient-to-br from-mitchly-blue to-mitchly-purple overflow-hidden">
-        <!-- Background Pattern -->
-        <div class="absolute inset-0 opacity-10">
-          <div class="absolute inset-0 bg-white/10"></div>
+      <div class="relative h-64 md:h-96 overflow-hidden">
+        <!-- Background Image or Gradient -->
+        <div v-if="bandImages.bandPhoto" class="absolute inset-0">
+          <img :src="bandImages.bandPhoto" :alt="bandProfile.bandName" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+        </div>
+        <div v-else class="absolute inset-0 bg-gradient-to-br from-mitchly-blue to-mitchly-purple">
+          <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0 bg-white/10"></div>
+          </div>
         </div>
 
         <!-- Band Info Overlay -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-          <div class="container mx-auto px-4 md:px-6 pb-6 md:pb-8">
-            <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
-              <!-- Band Image/Logo -->
-              <div class="w-24 h-24 md:w-32 md:h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
-                <Music class="w-12 h-12 md:w-16 md:h-16 text-white" />
+        <div class="absolute inset-0 flex items-end">
+          <div class="container mx-auto px-4 md:px-6 pb-4 md:pb-8">
+            <div class="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-6">
+              <!-- Band Logo/Album Cover -->
+              <div class="flex-shrink-0">
+                <div v-if="bandImages.logo || bandImages.albumCover" class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-lg overflow-hidden shadow-2xl">
+                  <img 
+                    :src="bandImages.logo || bandImages.albumCover" 
+                    :alt="bandProfile.bandName" 
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+                <div v-else class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-black/30 backdrop-blur rounded-lg flex items-center justify-center">
+                  <Music class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-white" />
+                </div>
               </div>
               
               <!-- Band Details -->
-              <div class="flex-1 text-white">
-                <h1 class="text-2xl md:text-4xl font-bold mb-2">{{ bandProfile.bandName }}</h1>
-                <p class="text-lg md:text-xl text-white/90">{{ bandProfile.primaryGenre }}</p>
-                <div class="flex flex-wrap gap-2 md:gap-4 mt-2 md:mt-3">
-                  <span class="text-xs md:text-sm text-white/70">
-                    <Calendar class="inline w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <div class="flex-1 min-w-0">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 text-white truncate">{{ bandProfile.bandName }}</h1>
+                <p class="text-base sm:text-lg md:text-xl text-white/90">{{ bandProfile.primaryGenre }}</p>
+                <div class="flex flex-wrap gap-3 sm:gap-4 mt-2">
+                  <span class="text-xs sm:text-sm text-white/70">
+                    <Calendar class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Formed {{ bandProfile.formationYear }}
                   </span>
-                  <span class="text-xs md:text-sm text-white/70">
-                    <MapPin class="inline w-3 h-3 md:w-4 md:h-4 mr-1" />
+                  <span class="text-xs sm:text-sm text-white/70">
+                    <MapPin class="inline w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     {{ bandProfile.origin }}
                   </span>
                 </div>
               </div>
 
-              <!-- Action Buttons -->
-              <div class="flex gap-2 w-full md:w-auto">
-                <button
-                  @click="copyToClipboard(getBandProfileText(), 'Profile')"
-                  class="bg-white/90 hover:bg-white text-mitchly-dark px-3 md:px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg flex-1 md:flex-initial text-sm md:text-base"
-                >
-                  <Copy v-if="copiedMessage !== 'Profile'" class="w-4 h-4 md:w-5 md:h-5" />
-                  <CheckCircle v-else class="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-                  <span class="hidden sm:inline">{{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy Profile' }}</span>
-                  <span class="sm:hidden">{{ copiedMessage === 'Profile' ? 'Copied!' : 'Copy' }}</span>
-                </button>
+              <!-- Share Button Only -->
+              <div class="flex-shrink-0">
                 <button
                   @click="shareBand"
-                  class="bg-white/90 hover:bg-white text-mitchly-dark px-3 md:px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg flex-1 md:flex-initial text-sm md:text-base"
+                  class="bg-white/90 hover:bg-white text-mitchly-dark px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg text-sm sm:text-base"
                 >
-                  <Share2 class="w-4 h-4 md:w-5 md:h-5" />
-                  Share
+                  <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Share</span>
                 </button>
               </div>
             </div>
@@ -645,21 +651,31 @@ const getChipVariant = (index) => {
   return variants[index % variants.length];
 };
 
-const shareBand = () => {
+const shareBand = async () => {
   const url = window.location.href;
   const text = `Check out ${bandProfile.value.bandName} - ${bandProfile.value.primaryGenre} band`;
   
-  if (navigator.share) {
-    navigator.share({
-      title: bandProfile.value.bandName,
-      text,
-      url
-    }).catch(err => console.log('Error sharing:', err));
+  // Use native share on mobile devices that support it
+  if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    try {
+      await navigator.share({
+        title: bandProfile.value.bandName,
+        text,
+        url
+      });
+    } catch (err) {
+      // User cancelled or error occurred
+      console.log('Share cancelled or error:', err);
+    }
   } else {
-    // Fallback - copy to clipboard
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('Band link copied to clipboard!', 'success');
-    });
+    // Desktop or browsers without share API - copy to clipboard
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied to clipboard!', 'success');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showToast('Failed to copy link', 'error');
+    }
   }
 };
 

@@ -73,10 +73,10 @@ export const generateBandProfile = async (prompt, advancedData = null, onProgres
   }
 };
 
-// New streaming version
+// New streaming version with progress updates
 export const generateBandProfileStream = async (prompt, advancedData = null, onProgress = null) => {
   try {
-    const response = await fetch('/api/generate-band-stream', {
+    const response = await fetch(ENDPOINTS.generateBandStream, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
