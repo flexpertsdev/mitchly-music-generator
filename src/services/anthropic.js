@@ -47,7 +47,7 @@ export const generateBandProfileStream = async (prompt, advancedData = null, onP
       { type: 'progress', step: 'finalizing', message: '🚀 Finalizing everything...', progress: 95 }
     ];
 
-    // Start showing progress
+    // Start showing progress - slowed down to better match actual function duration
     if (onProgress) {
       let currentStep = 0;
       const progressInterval = setInterval(() => {
@@ -55,7 +55,7 @@ export const generateBandProfileStream = async (prompt, advancedData = null, onP
           onProgress(progressSteps[currentStep]);
           currentStep++;
         }
-      }, 800); // Update every 800ms
+      }, 2500); // Update every 2.5 seconds for a ~25-30 second total duration
 
       try {
         // Call the streaming endpoint (which is now just a regular endpoint)

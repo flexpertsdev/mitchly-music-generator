@@ -28,50 +28,71 @@
         <p class="text-gray-400 mt-1 md:mt-2 text-sm md:text-base">Make more than music</p>
       </div>
       
-      <!-- Input Section -->
-      <ConceptInput 
-        @generate="handleGenerate" 
-        :loading="generating"
-      />
+      <!-- Input Section / Progress Display -->
+      <div class="relative max-w-2xl mx-auto">
+        <!-- Input Form - Hidden when generating -->
+        <transition name="fade">
+          <ConceptInput 
+            v-if="!generating"
+            @generate="handleGenerate" 
+            :loading="generating"
+          />
+        </transition>
 
-      <!-- Progress Display -->
-      <div v-if="generating && progressData" class="mt-8">
-        <div class="max-w-2xl mx-auto bg-mitchly-gray rounded-xl p-6 border border-gray-800">
-          <!-- Progress Bar -->
-          <div class="mb-4">
-            <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
-              <div 
-                class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-500 ease-out"
-                :style="`width: ${progressData.progress}%`"
-              />
+        <!-- Progress Overlay - Shows when generating -->
+        <transition name="fade">
+          <div v-if="generating && progressData" class="w-full">
+            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800">
+              <!-- Progress Bar -->
+              <div class="mb-4">
+                <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
+                  <div 
+                    class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-1000 ease-out"
+                    :style="`width: ${progressData.progress}%`"
+                  />
+                </div>
+                <p class="text-sm text-gray-400 mt-2 text-center">{{ progressData.progress }}%</p>
+              </div>
+              
+              <!-- Progress Message -->
+              <div class="text-center mb-6">
+                <p class="text-lg text-white font-medium animate-pulse">
+                  {{ progressData.message }}
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                  Creating your unique band profile...
+                </p>
+              </div>
+              
+              <!-- Progress Steps Visual -->
+              <div class="grid grid-cols-3 gap-2">
+                <div 
+                  v-for="step in progressSteps" 
+                  :key="step.id"
+                  :class="[
+                    'text-center p-3 rounded-lg transition-all duration-500',
+                    progressData.progress >= step.minProgress 
+                      ? 'bg-mitchly-blue/20 border border-mitchly-blue/40 scale-105' 
+                      : 'bg-mitchly-dark/50 border border-gray-700'
+                  ]"
+                >
+                  <span class="text-2xl md:text-3xl block mb-1">{{ step.emoji }}</span>
+                  <p class="text-xs text-gray-400">{{ step.name }}</p>
+                </div>
+              </div>
+
+              <!-- Cancel Button (optional) -->
+              <div class="mt-6 text-center">
+                <button 
+                  @click="cancelGeneration"
+                  class="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                >
+                  Cancel Generation
+                </button>
+              </div>
             </div>
-            <p class="text-sm text-gray-400 mt-2 text-center">{{ progressData.progress }}%</p>
           </div>
-          
-          <!-- Progress Message -->
-          <div class="text-center">
-            <p class="text-lg text-white font-medium animate-pulse">
-              {{ progressData.message }}
-            </p>
-          </div>
-          
-          <!-- Progress Steps Visual -->
-          <div class="mt-6 grid grid-cols-3 md:grid-cols-9 gap-2">
-            <div 
-              v-for="step in progressSteps" 
-              :key="step.id"
-              :class="[
-                'text-center p-2 rounded-lg transition-all',
-                progressData.progress >= step.minProgress 
-                  ? 'bg-mitchly-blue/20 border border-mitchly-blue/40' 
-                  : 'bg-mitchly-dark/50 border border-gray-700'
-              ]"
-            >
-              <span class="text-lg md:text-2xl">{{ step.emoji }}</span>
-              <p class="text-xs text-gray-400 mt-1 hidden md:block">{{ step.name }}</p>
-            </div>
-          </div>
-        </div>
+        </transition>
       </div>
   
     </div>
@@ -247,6 +268,12 @@ const handleGenerate = async (data) => {
   }
 };
 
+const cancelGeneration = () => {
+  generating.value = false;
+  progressData.value = null;
+  showToast('info', 'Cancelled', 'Band generation cancelled');
+};
+
 const showToast = (type, title, message) => {
   const id = Date.now();
   toasts.value.push({ id, type, title, message });
@@ -271,6 +298,25 @@ const getToastIcon = (type) => {
 </script>
 
 <style scoped>
+/* Fade transitions for input/progress swap */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  position: absolute;
+  width: 100%;
+}
+
+/* Toast transitions */
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.3s ease;
