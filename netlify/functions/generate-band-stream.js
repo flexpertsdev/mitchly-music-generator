@@ -83,12 +83,17 @@ Concept: ${advancedData.concept || prompt}
 Original prompt: ${prompt}`;
     }
 
-    // Generate band profile
-    const message = await anthropic.messages.create({
-      model: "claude-opus-4-1-20250805",
-      max_tokens: 4000,
-      temperature: 0.7,
-      system: `You are a creative music industry professional helping to create fictional band profiles.
+    // Generate band profile with retry logic for overload errors
+    let message;
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        message = await anthropic.messages.create({
+          model: "claude-opus-4-1-20250805",
+          max_tokens: 4000,
+          temperature: 0.7,
+          system: `You are a creative music industry professional helping to create fictional band profiles.
 Create a complete band profile based on the user's concept.
 Be creative, specific, and ensure the band feels authentic and unique.
 
@@ -133,11 +138,30 @@ Important requirements:
 - Include production style description
 - 8-12 track titles that fit the concept
 - Ensure all track names are unique and fit the band's concept`,
-      messages: [{
-        role: "user",
-        content: fullPrompt
-      }]
-    });
+          messages: [{
+            role: "user",
+            content: fullPrompt
+          }]
+        });
+        
+        // If successful, break out of retry loop
+        break;
+      } catch (error) {
+        if (error.status === 529 && retries > 1) {
+          // Anthropic is overloaded, wait and retry
+          console.log(`Anthropic overloaded, retrying in 2 seconds... (${retries - 1} retries left)`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          retries--;
+        } else {
+          // Other error or no retries left, throw it
+          throw error;
+        }
+      }
+    }
+    
+    if (!message) {
+      throw new Error('Failed to generate band profile after retries');
+    }
 
     const profileText = message.content[0].text;
     const cleanedText = profileText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

@@ -11,6 +11,15 @@
   # Directory where functions are stored
   directory = "netlify/functions"
 
+# Edge Functions configuration
+[[edge_functions]]
+  path = "/api/generate-band-sse"
+  function = "generate-band-sse"
+
+[[edge_functions]]
+  path = "/api/generate-band-stream-production"
+  function = "generate-band-stream-production"
+
 # Development server configuration
 [dev]
   port = 5142
