@@ -1,4 +1,17 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const { Client, Databases, ID, Query } = require('node-appwrite');
+
+// Initialize Appwrite
+const appwriteClient = new Client()
+  .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+  .setProject(process.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df')
+  .setKey(process.env.APPWRITE_API_KEY);
+
+const databases = new Databases(appwriteClient);
+
+// Database constants
+const DATABASE_ID = 'mitchly-music-db';
+const SONGS_COLLECTION = 'songs';
 
 exports.handler = async (event, context) => {
   // Only allow POST requests
@@ -17,7 +30,7 @@ exports.handler = async (event, context) => {
   };
 
   try {
-    const { songTitle, trackNumber, bandProfile } = JSON.parse(event.body);
+    const { songTitle, trackNumber, bandProfile, songId, bandId } = JSON.parse(event.body);
 
     if (!songTitle || !trackNumber || !bandProfile) {
       return {
@@ -106,10 +119,57 @@ Respond ONLY with valid JSON in this exact format:
       throw new Error('Invalid response format from AI');
     }
 
+    // Update song in Appwrite if songId is provided
+    if (process.env.APPWRITE_API_KEY && songId) {
+      try {
+        console.log('Updating song in database...');
+        await databases.updateDocument(
+          DATABASE_ID,
+          SONGS_COLLECTION,
+          songId,
+          {
+            lyrics: song.lyrics,
+            description: song.songDescription,
+            artistDescription: bandProfile.aiDescription || `${bandProfile.bandName} - ${bandProfile.primaryGenre}`,
+            status: 'completed'
+          }
+        );
+      } catch (dbError) {
+        console.error('Database update error:', dbError);
+        // Continue even if database update fails
+      }
+    } else if (process.env.APPWRITE_API_KEY && bandId) {
+      // Create new song if no songId but bandId is provided
+      try {
+        console.log('Creating new song in database...');
+        await databases.createDocument(
+          DATABASE_ID,
+          SONGS_COLLECTION,
+          ID.unique(),
+          {
+            bandId: bandId,
+            title: songTitle,
+            trackNumber: trackNumber,
+            lyrics: song.lyrics,
+            description: song.songDescription,
+            artistDescription: bandProfile.aiDescription || `${bandProfile.bandName} - ${bandProfile.primaryGenre}`,
+            audioUrl: null,
+            status: 'completed'
+          }
+        );
+      } catch (dbError) {
+        console.error('Database create error:', dbError);
+        // Continue even if database create fails
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(song)
+      body: JSON.stringify({
+        ...song,
+        artistDescription: bandProfile.aiDescription || `${bandProfile.bandName} - ${bandProfile.primaryGenre}`
+      })
     };
   } catch (error) {
     console.error('Error generating song:', error);

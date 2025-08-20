@@ -1,4 +1,4 @@
-import { Client, Databases, Storage, ID } from 'appwrite';
+import { Client, Databases, Storage, ID, Query } from 'appwrite';
 
 // Initialize Appwrite client
 const client = new Client()
@@ -34,7 +34,7 @@ async function checkAppwriteAvailability() {
   
   try {
     // Try a simple operation to check connectivity
-    await databases.listDocuments(DATABASE_ID, BANDS_COLLECTION, { limit: 1 });
+    await databases.listDocuments(DATABASE_ID, BANDS_COLLECTION, [Query.limit(1)]);
     isAppwriteAvailable = true;
   } catch (error) {
     console.warn('Appwrite is not available:', error.message);
@@ -270,10 +270,10 @@ export const bandService = {
         const response = await databases.listDocuments(
           DATABASE_ID,
           BANDS_COLLECTION,
-          {
-            limit,
-            orderDesc: '$createdAt'
-          }
+          [
+            Query.limit(limit),
+            Query.orderDesc('$createdAt')
+          ]
         );
         const remoteBands = response.documents.map(doc => ({
           ...doc,
@@ -431,10 +431,10 @@ export const songService = {
         const response = await databases.listDocuments(
           DATABASE_ID,
           SONGS_COLLECTION,
-          {
-            queries: [`bandId.equal("${bandId}")`],
-            orderAsc: 'trackNumber'
-          }
+          [
+            Query.equal('bandId', bandId),
+            Query.orderAsc('trackNumber')
+          ]
         );
         
         // Merge with local songs for this band
@@ -461,7 +461,7 @@ export const songService = {
         const response = await databases.listDocuments(
           DATABASE_ID,
           SONGS_COLLECTION,
-          { limit }
+          [Query.limit(limit)]
         );
         
         // Merge with local songs

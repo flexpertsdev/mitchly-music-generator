@@ -489,32 +489,20 @@ const handleGenerateSong = async (songTitle, trackNumber) => {
   generatingSongIndex.value = trackNumber - 1;
   
   try {
-    const generatedSong = await generateSong(songTitle, trackNumber, bandProfile.value);
-    
-    // Check if song already exists (placeholder created during band creation)
+    // Check if song already exists to get its ID
     const existingSong = songs.value.find(s => s.title === songTitle);
     
-    if (existingSong && existingSong.$id) {
-      // Update existing song with generated content
-      await songService.update(existingSong.$id, {
-        lyrics: generatedSong.lyrics,
-        description: generatedSong.songDescription,
-        artistDescription: generatedSong.artistDescription,
-        status: 'completed'
-      });
-    } else {
-      // Create new song if it doesn't exist
-      await songService.create({
-        bandId: band.value.$id,
-        title: songTitle,
-        trackNumber,
-        lyrics: generatedSong.lyrics,
-        description: generatedSong.songDescription,
-        artistDescription: generatedSong.artistDescription,
-        status: 'completed',
-        audioUrl: ''
-      });
-    }
+    // Pass songId if it exists, otherwise pass bandId for creation
+    const generatedSong = await generateSong(
+      songTitle, 
+      trackNumber, 
+      bandProfile.value,
+      existingSong?.$id || null,
+      band.value.$id
+    );
+    
+    // The Netlify function now handles database updates directly
+    // Just reload the songs to get the updated data
     
     // Reload songs to get updated data
     songs.value = await songService.getByBandId(band.value.$id);

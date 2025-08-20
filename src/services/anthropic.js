@@ -36,14 +36,14 @@ export async function generateBandProfile(conceptText) {
   }
 }
 
-export async function generateSong(songTitle, trackNumber, bandProfile) {
+export async function generateSong(songTitle, trackNumber, bandProfile, songId = null, bandId = null) {
   try {
     const response = await fetch('/.netlify/functions/generate-song', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ songTitle, trackNumber, bandProfile })
+      body: JSON.stringify({ songTitle, trackNumber, bandProfile, songId, bandId })
     });
 
     if (!response.ok) {

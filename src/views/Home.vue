@@ -43,39 +43,7 @@
         </div>
       </div>
 
-      <!-- Recent Bands -->
-      <div v-if="recentBands.length > 0" class="mt-12">
-        <h2 class="text-2xl font-bold text-white mb-4">Recent Bands</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
-            v-for="band in recentBands"
-            :key="band.$id"
-            class="bg-mitchly-gray rounded-lg border border-gray-800 p-4 hover:bg-mitchly-light-gray hover:border-mitchly-blue/30 transition-all cursor-pointer"
-            @click="loadBand(band)"
-          >
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-gradient-to-br from-mitchly-blue to-mitchly-purple rounded-full flex items-center justify-center">
-                <Music class="w-6 h-6 text-white" />
-              </div>
-              <div class="flex-1">
-                <h3 class="font-semibold text-white">{{ band.bandName }}</h3>
-                <p class="text-sm text-gray-400">{{ band.primaryGenre }}</p>
-              </div>
-            </div>
-            <div class="mt-3 flex justify-between items-center">
-              <span class="text-xs text-gray-500">
-                {{ new Date(band.$createdAt).toLocaleDateString() }}
-              </span>
-              <router-link
-                :to="`/band/${band.$id}`"
-                class="text-mitchly-blue hover:text-mitchly-blue/80 text-sm"
-                @click.stop
-              >
-                View →
-              </router-link>
-            </div>
-          </div>
-        </div>
+  
       </div>
     </div>
 
@@ -98,7 +66,7 @@
         </div>
       </transition-group>
     </div>
-  </div>
+  
 </template>
 
 <script setup>

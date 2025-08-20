@@ -1,11 +1,26 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const { Client, Databases, Storage, ID, Query } = require('node-appwrite');
 
-// Optional: Set your webhook.site URL here for debugging
-const WEBHOOK_URL = process.env.WEBHOOK_URL || null; // Set in Netlify env vars
+// Initialize Appwrite
+const appwriteClient = new Client()
+  .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+  .setProject(process.env.VITE_APPWRITE_PROJECT_ID || '6761a31600224c0e82df')
+  .setKey(process.env.APPWRITE_API_KEY);
+
+const databases = new Databases(appwriteClient);
+const storage = new Storage(appwriteClient);
+
+// Database constants
+const DATABASE_ID = 'mitchly-music-db';
+const BANDS_COLLECTION = 'bands';
+const SONGS_COLLECTION = 'songs';
+const BUCKET_ID = 'band-images';
+
+// Optional webhook for debugging
+const WEBHOOK_URL = process.env.WEBHOOK_URL || null;
 
 async function sendToWebhook(data) {
   if (!WEBHOOK_URL) return;
-  
   try {
     await fetch(WEBHOOK_URL, {
       method: 'POST',
@@ -18,6 +33,105 @@ async function sendToWebhook(data) {
     });
   } catch (err) {
     console.error('Webhook error:', err);
+  }
+}
+
+// Generate images with FAL
+async function generateImages(band) {
+  const images = {};
+  const FAL_API_KEY = process.env.FAL_API_KEY;
+  
+  if (!FAL_API_KEY) {
+    console.log('FAL API key not configured, skipping image generation');
+    return images;
+  }
+
+  try {
+    // Generate band logo
+    console.log('Generating band logo...');
+    const logoResponse = await fetch('https://fal.run/fal-ai/flux/dev', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: `minimalist band logo design for "${band.bandName}", ${band.primaryGenre} band, professional logo, vector style`,
+        num_images: 1,
+        image_size: 'square',
+        num_inference_steps: 28
+      })
+    });
+
+    if (logoResponse.ok) {
+      const logoData = await logoResponse.json();
+      images.logo = logoData.images?.[0]?.url;
+    }
+
+    // Generate album cover
+    console.log('Generating album cover...');
+    const albumResponse = await fetch('https://fal.run/fal-ai/flux/schnell', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: `album cover art for "${band.albumTitle}" by ${band.bandName}, ${band.primaryGenre} music, artistic, professional`,
+        num_images: 1,
+        image_size: 'square',
+        num_inference_steps: 4
+      })
+    });
+
+    if (albumResponse.ok) {
+      const albumData = await albumResponse.json();
+      images.album = albumData.images?.[0]?.url;
+    }
+
+    // Generate band photo
+    console.log('Generating band photo...');
+    const photoResponse = await fetch('https://fal.run/fal-ai/flux-realism', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: `professional band photo of ${band.bandName}, ${band.primaryGenre} band, promotional photo`,
+        num_images: 1,
+        image_size: 'landscape_16_9',
+        num_inference_steps: 28
+      })
+    });
+
+    if (photoResponse.ok) {
+      const photoData = await photoResponse.json();
+      images.photo = photoData.images?.[0]?.url;
+    }
+  } catch (error) {
+    console.error('Error generating images:', error);
+  }
+  
+  return images;
+}
+
+// Upload image to Appwrite Storage
+async function uploadImageToStorage(imageUrl, filename) {
+  try {
+    const response = await fetch(imageUrl);
+    const buffer = await response.buffer();
+    
+    const file = await storage.createFile(
+      BUCKET_ID,
+      ID.unique(),
+      buffer
+    );
+    
+    return `${process.env.VITE_APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${process.env.VITE_APPWRITE_PROJECT_ID}`;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    return null;
   }
 }
 
@@ -140,7 +254,7 @@ Respond ONLY with valid JSON in this exact format:
     });
 
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-1-20250805,  // Using Sonnet for faster responses
+      model: 'claude-opus-4-1-20250805',  // Using Sonnet for faster responses
       max_tokens: 4000,  // Reduced for faster generation
       temperature: 0.7,
       messages: [
@@ -187,10 +301,84 @@ Respond ONLY with valid JSON in this exact format:
       throw new Error('Invalid response format from AI');
     }
 
+    // Generate images with FAL
+    console.log('Generating images for band...');
+    const images = await generateImages(bandProfile);
+
+    // Prepare image URLs for database
+    const imageUrls = {};
+
+    // Save band to Appwrite Database (if API key is configured)
+    let bandDocument = null;
+    if (process.env.APPWRITE_API_KEY) {
+      try {
+        // Upload images to Appwrite if they were generated
+        if (images.logo) {
+          imageUrls.logoUrl = await uploadImageToStorage(images.logo, `${bandProfile.bandName}-logo.png`);
+        }
+        if (images.album) {
+          imageUrls.albumCoverUrl = await uploadImageToStorage(images.album, `${bandProfile.albumConcept?.title || 'album'}-cover.png`);
+        }
+        if (images.photo) {
+          imageUrls.bandPhotoUrl = await uploadImageToStorage(images.photo, `${bandProfile.bandName}-photo.png`);
+        }
+
+        console.log('Saving band to database...');
+        bandDocument = await databases.createDocument(
+          DATABASE_ID,
+          BANDS_COLLECTION,
+          ID.unique(),
+          {
+            bandName: bandProfile.bandName,
+            primaryGenre: bandProfile.primaryGenre,
+            profileData: JSON.stringify(bandProfile),
+            albumTitle: bandProfile.albumConcept?.title || '',
+            albumDescription: bandProfile.albumConcept?.description || '',
+            trackCount: bandProfile.trackListing?.length || 0,
+            ...imageUrls
+          }
+        );
+
+        // Create song placeholders in database
+        if (bandProfile.trackListing && bandProfile.trackListing.length > 0) {
+          console.log('Creating song placeholders...');
+          for (let i = 0; i < bandProfile.trackListing.length; i++) {
+            const title = bandProfile.trackListing[i];
+            try {
+              await databases.createDocument(
+                DATABASE_ID,
+                SONGS_COLLECTION,
+                ID.unique(),
+                {
+                  bandId: bandDocument.$id,
+                  title: title,
+                  trackNumber: i + 1,
+                  description: `Track ${i + 1} from ${bandProfile.albumConcept?.title || 'the album'}`,
+                  lyrics: '',
+                  audioUrl: null,
+                  status: 'pending'
+                }
+              );
+            } catch (songError) {
+              console.error('Error creating song:', songError);
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Continue without database save
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(bandProfile)
+      body: JSON.stringify({
+        ...bandProfile,
+        $id: bandDocument?.$id || `local_${Date.now()}`,
+        images: imageUrls,
+        message: 'Band successfully generated!'
+      })
     };
   } catch (error) {
     console.error('Error generating band profile:', error);
