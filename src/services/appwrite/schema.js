@@ -94,11 +94,11 @@ export const SCHEMA = {
       { key: 'userPrompt', type: 'string', size: 5000, required: false }, // Optional album-specific prompt
       { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // Album AI context
       { key: 'trackCount', type: 'integer', required: false, default: 8 },
-      { key: 'releaseYear', type: 'integer', required: false }, // Missing in Appwrite
-      { key: 'conceptData', type: 'string', size: 10000, required: false }, // Missing in Appwrite - JSON string
+      { key: 'releaseYear', type: 'integer', required: false }, // Added to Appwrite
+      { key: 'conceptData', type: 'string', size: 20000, required: false }, // Added with size > 16384 to bypass limit
       // Visual Assets
       { key: 'coverUrl', type: 'url', required: false },
-      { key: 'coverPrompt', type: 'string', size: 1000, required: false }, // Missing in Appwrite
+      { key: 'coverPrompt', type: 'string', size: 16384, required: false }, // Added with size >= 16384 to bypass limit
       { key: 'backCoverUrl', type: 'url', required: false }, // Missing in Appwrite
       // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
       // Error tracking
@@ -121,7 +121,7 @@ export const SCHEMA = {
       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'trackNumber', type: 'integer', required: true },
       { key: 'status', type: 'string', size: 50, required: false, default: 'pending' }, // Plain string in Appwrite
-      { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // Missing in Appwrite
+      { key: 'aiInstructions', type: 'string', size: 16384, required: false }, // Added with size >= 16384 to bypass limit
       { key: 'description', type: 'string', size: 500, required: false },
       // Lyrics
       { key: 'lyrics', type: 'string', size: 10000, required: true }, // Required in Appwrite
