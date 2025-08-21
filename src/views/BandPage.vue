@@ -373,7 +373,7 @@
                       >
                         <Copy v-if="copiedMessage !== 'Lyrics'" class="w-3 h-3" />
                         <CheckCircle v-else class="w-3 h-3" />
-                        {{ copiedMessage === 'Lyrics' ? 'Copied!' : 'Copy for Mureka.ai' }}
+                        {{ copiedMessage === 'Lyrics' ? 'Copied!' : 'Copy Lyrics' }}
                       </button>
                     </div>
                     <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans bg-mitchly-dark/50 p-4 rounded-lg border border-gray-700">{{ getSongLyrics(track) }}</pre>
