@@ -63,7 +63,7 @@ export default async ({ req, res, log, error }) => {
     log('Generating band profile with Anthropic...');
     
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-opus-4-1-20250805",
       max_tokens: 4000,
       temperature: 0.7,
       system: `You are a creative music industry professional helping to create fictional band profiles.

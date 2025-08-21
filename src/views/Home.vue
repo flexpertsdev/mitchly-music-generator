@@ -108,7 +108,8 @@ onMounted(async () => {
   appStatus.value = { ...serviceStatus };
   
   try {
-    recentBands.value = await bandService.list(6);
+    const bandResponse = await bandService.list({ limit: 6 });
+    recentBands.value = bandResponse.documents || [];
     // Update status after successful load
     appStatus.value = { ...serviceStatus };
   } catch (error) {
