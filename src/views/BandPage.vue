@@ -266,7 +266,7 @@
                       />
                     </div>
                     <!-- Action Buttons (Below title on mobile) -->
-                    <div v-if="!getSongLyrics(track) || (getSongLyrics(track) && !getSongAudio(track))" class="flex gap-2 mt-2">
+                    <div class="flex gap-2 mt-2">
                       <button
                         v-if="!getSongLyrics(track)"
                         @click.stop="handleGenerateSong(track, index + 1)"

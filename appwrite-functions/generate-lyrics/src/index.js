@@ -1,23 +1,42 @@
+/**
+ * Generate Lyrics Function
+ * Triggered when a song document is updated with status 'generating'
+ * 
+ * This function:
+ * 1. Fetches band context
+ * 2. Generates lyrics using Anthropic based on song theme
+ * 3. Updates song with generated lyrics
+ */
 import { Client, Databases } from 'node-appwrite';
 import Anthropic from '@anthropic-ai/sdk';
+
+// Constants
+const DATABASE_ID = 'mitchly-music-db';
+const BANDS_COLLECTION = 'bands';
+const SONGS_COLLECTION = 'songs';
 
 export default async ({ req, res, log, error }) => {
   try {
     // Parse the event data
-    const payload = JSON.parse(req.body);
-    const document = payload.$response;
+    const event = req.body;
     
-    // Only process if status changed to 'generating'
-    if (document.status !== 'generating') {
-      return res.json({ success: true, message: 'Not generating status' });
+    // Check if this is a song update event
+    if (!event.$id || event.$collection !== SONGS_COLLECTION) {
+      return res.json({ success: false, message: 'Not a song update event' });
     }
     
-    log('Starting lyrics generation for song:', document.$id);
+    // Only process if status changed to 'generating'
+    if (event.status !== 'generating') {
+      return res.json({ success: false, message: 'Not generating status' });
+    }
     
-    // Initialize Appwrite client
+    const songId = event.$id;
+    log(`Starting lyrics generation for song: ${songId}`);
+    
+    // Initialize Appwrite client using built-in variables
     const client = new Client()
-      .setEndpoint(req.variables.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
-      .setProject(req.variables.APPWRITE_PROJECT_ID || 'flexos')
+      .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
+      .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
       .setKey(req.variables.APPWRITE_API_KEY);
     
     const databases = new Databases(client);
@@ -28,31 +47,43 @@ export default async ({ req, res, log, error }) => {
     });
     
     // Get band profile if we have bandId
-    let bandProfile = document.bandProfile;
-    if (!bandProfile && document.bandId) {
+    let bandProfile = null;
+    if (event.bandId) {
       try {
         const band = await databases.getDocument(
-          'mitchly-music-db',
-          'bands',
-          document.bandId
+          DATABASE_ID,
+          BANDS_COLLECTION,
+          event.bandId
         );
-        bandProfile = band;
+        
+        // Parse profile data if it's a string
+        if (band.profileData) {
+          bandProfile = typeof band.profileData === 'string' 
+            ? JSON.parse(band.profileData) 
+            : band.profileData;
+        }
       } catch (e) {
         log('Could not fetch band profile:', e.message);
       }
     }
     
     // Build the prompt
-    const prompt = `You are an expert songwriter creating Track ${document.trackNumber}: "${document.title}" for the band ${bandProfile?.bandName || 'Unknown Band'}.
+    const prompt = `You are an expert songwriter creating lyrics for Track ${event.trackNumber}: "${event.title}" for the band ${bandProfile?.bandName || 'Unknown Band'}.
 
 Band Profile Context:
-- Genre: ${bandProfile?.primaryGenre || 'Rock'}
+- Genre: ${bandProfile?.primaryGenre || event.primaryGenre || 'Rock'}
 - Core Sound: ${bandProfile?.coreSound || 'Alternative'}
-- Vocal Style: ${bandProfile?.vocalStyle?.type || bandProfile?.vocalStyle || 'Dynamic'}
+- Vocal Style: ${bandProfile?.vocalStyle?.type || 'Dynamic'}
 - Album: ${bandProfile?.albumConcept?.title || 'Untitled Album'}
 - Album Theme: ${bandProfile?.albumConcept?.description || 'No description'}
 - Lyrical Themes: ${bandProfile?.lyricalThemes?.join(', ') || 'General themes'}
 - Musical Influences: ${bandProfile?.influences?.join(', ') || 'Various influences'}
+
+Song Context:
+- Title: ${event.title}
+- Track Number: ${event.trackNumber}
+- Description: ${event.description || 'No specific description'}
+- AI Instructions: ${event.aiInstructions || 'No specific instructions'}
 
 Create a complete song with:
 1. Song-specific description (under 100 characters for AI music platforms)
@@ -68,14 +99,15 @@ The song should:
 Respond ONLY with valid JSON in this exact format:
 {
   "songDescription": "Brief description under 100 characters about tempo, mood, and musical elements",
-  "lyrics": "Complete song lyrics with proper sectioning:\\n\\n[Intro]\\n(description)\\nlyrics\\n\\n[Verse 1]\\nlyrics\\n\\n[Pre-Chorus]\\nlyrics\\n\\n[Chorus]\\nlyrics\\n\\n[Verse 2]\\nlyrics\\n\\n[Bridge]\\nlyrics\\n\\n[Final Chorus]\\nlyrics\\n\\n[Outro]\\nlyrics"
+  "lyrics": "Complete song lyrics with proper sectioning:\\n\\n[Intro]\\n(instrumental description or lyrics)\\n\\n[Verse 1]\\nlyrics\\n\\n[Pre-Chorus]\\nlyrics\\n\\n[Chorus]\\nlyrics\\n\\n[Verse 2]\\nlyrics\\n\\n[Chorus]\\nlyrics\\n\\n[Bridge]\\nlyrics\\n\\n[Final Chorus]\\nlyrics\\n\\n[Outro]\\nlyrics"
 }`;
 
     log('Calling Anthropic API...');
     
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-1-20250805',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4000,
+      temperature: 0.8,
       messages: [{
         role: 'user',
         content: prompt
@@ -98,13 +130,12 @@ Respond ONLY with valid JSON in this exact format:
     
     // Update the document with generated lyrics
     await databases.updateDocument(
-      'mitchly-music-db',
-      'songs',
-      document.$id,
+      DATABASE_ID,
+      SONGS_COLLECTION,
+      songId,
       {
         lyrics: song.lyrics,
         description: song.songDescription,
-        artistDescription: bandProfile?.aiDescription || `${bandProfile?.bandName || 'Unknown Band'} - ${bandProfile?.primaryGenre || 'Rock'}`,
         status: 'completed',
         lyricsGeneratedAt: new Date().toISOString()
       }
@@ -114,38 +145,40 @@ Respond ONLY with valid JSON in this exact format:
     
     return res.json({
       success: true,
-      songId: document.$id
+      songId: songId,
+      message: 'Lyrics generated successfully'
     });
     
   } catch (err) {
-    error('Error generating lyrics:', err);
+    error('Error generating lyrics:', err.message);
     
     // Try to update the document with error status
-    try {
-      const client = new Client()
-        .setEndpoint(req.variables.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
-        .setProject(req.variables.APPWRITE_PROJECT_ID || 'flexos')
-        .setKey(req.variables.APPWRITE_API_KEY);
-      
-      const databases = new Databases(client);
-      const payload = JSON.parse(req.body);
-      
-      await databases.updateDocument(
-        'mitchly-music-db',
-        'songs',
-        payload.$response.$id,
-        {
-          status: 'failed',
-          generationError: err.message || 'Unknown error'
-        }
-      );
-    } catch (updateErr) {
-      error('Failed to update error status:', updateErr);
+    if (req.body?.$id) {
+      try {
+        const client = new Client()
+          .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
+          .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
+          .setKey(req.variables.APPWRITE_API_KEY);
+        
+        const databases = new Databases(client);
+        
+        await databases.updateDocument(
+          DATABASE_ID,
+          SONGS_COLLECTION,
+          req.body.$id,
+          {
+            status: 'failed',
+            generationError: err.message || 'Unknown error'
+          }
+        );
+      } catch (updateErr) {
+        error('Failed to update error status:', updateErr.message);
+      }
     }
     
     return res.json({
       success: false,
       error: err.message
-    }, 500);
+    });
   }
 };

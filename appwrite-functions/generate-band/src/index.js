@@ -38,11 +38,11 @@ export default async ({ req, res, log, error }) => {
     
     log(`Processing band generation for ID: ${bandId}`);
     
-    // Initialize Appwrite client
+    // Initialize Appwrite client - using built-in environment variables
     const client = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT)
-      .setProject(process.env.APPWRITE_PROJECT_ID)
-      .setKey(process.env.APPWRITE_API_KEY);
+      .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
+      .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
+      .setKey(req.variables.APPWRITE_API_KEY);
     
     const databases = new Databases(client);
     
@@ -56,14 +56,14 @@ export default async ({ req, res, log, error }) => {
     
     // Initialize Anthropic
     const anthropic = new Anthropic({ 
-      apiKey: process.env.ANTHROPIC_API_KEY 
+      apiKey: req.variables.ANTHROPIC_API_KEY 
     });
     
     // Generate band profile with Anthropic
     log('Generating band profile with Anthropic...');
     
     const message = await anthropic.messages.create({
-      model: "claude-opus-4-1-20250805",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 4000,
       temperature: 0.7,
       system: `You are a creative music industry professional helping to create fictional band profiles.
@@ -215,7 +215,7 @@ Important requirements:
     // Generate images using FAL.ai
     try {
       const falHeaders = {
-        'Authorization': `Key ${process.env.FAL_API_KEY}`,
+        'Authorization': `Key ${req.variables.FAL_API_KEY}`,
         'Content-Type': 'application/json'
       };
       
@@ -322,9 +322,9 @@ Important requirements:
     if (req.body?.$id) {
       try {
         const client = new Client()
-          .setEndpoint(process.env.APPWRITE_ENDPOINT)
-          .setProject(process.env.APPWRITE_PROJECT_ID)
-          .setKey(process.env.APPWRITE_API_KEY);
+          .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
+          .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
+          .setKey(req.variables.APPWRITE_API_KEY);
         
         const databases = new Databases(client);
         
