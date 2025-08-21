@@ -60,7 +60,7 @@ export const SCHEMA = {
       { key: 'logoUrl', type: 'string', size: 500, required: false },
       { key: 'logoPrompt', type: 'string', size: 1000, required: false },
       { key: 'bandPhotoUrl', type: 'string', size: 500, required: false },
-      { key: 'bandPhotoPrompt', type: 'string', size: 1000, required: false }, // Missing in Appwrite
+      { key: 'bandPhotoPrompt', type: 'string', size: 16384, required: false }, // Added with size >= 16384 to bypass limit
       // Legacy fields (still in Appwrite)
       { key: 'imageUrl', type: 'string', size: 500, required: false },
       { key: 'albumTitle', type: 'string', size: 255, required: false },
@@ -71,7 +71,7 @@ export const SCHEMA = {
       // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
       { key: 'publishedAt', type: 'datetime', required: false }, // Missing in Appwrite
       // Error tracking
-      { key: 'generationError', type: 'string', size: 1000, required: false } // Missing in Appwrite
+      { key: 'generationError', type: 'string', size: 16384, required: false } // Added with size >= 16384 to bypass limit
     ],
     indexes: [
       { key: 'status_idx', type: 'key', attributes: ['status'] },
@@ -102,7 +102,7 @@ export const SCHEMA = {
       { key: 'backCoverUrl', type: 'url', required: false }, // Missing in Appwrite
       // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
       // Error tracking
-      { key: 'generationError', type: 'string', size: 1000, required: false } // Missing in Appwrite
+      { key: 'generationError', type: 'string', size: 16384, required: false } // Added with size >= 16384 to bypass limit
     ],
     indexes: [
       { key: 'bandId_idx', type: 'key', attributes: ['bandId'] },
