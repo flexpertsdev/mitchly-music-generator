@@ -116,7 +116,7 @@ Provide a response in valid JSON format with this exact structure:
 }
 
 Important requirements:
-- Generate 8-12 unique tracks with titles, themes, and descriptions
+- Generate 10-12 unique tracks with titles, themes, and descriptions
 - AI description must be EXACTLY 180-200 characters for music generation platforms
 - Include detailed formation story
 - Include production style description

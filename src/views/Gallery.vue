@@ -350,7 +350,7 @@ const loadBands = async () => {
     
     // Load bands from both Appwrite and localStorage
     const [bandResponse, songResponse] = await Promise.all([
-      bandService.list({ limit: 100 }), // Get more bands from Appwrite/localStorage
+      bandService.list({ limit: 100, status: 'published' }), // Only get published bands
       songService.list({ limit: 200 })  // Get all songs
     ]);
     
@@ -364,7 +364,7 @@ const loadBands = async () => {
     console.error('Error loading bands:', error);
     // Even if Appwrite fails, we should still get localStorage bands
     try {
-      const fallbackBands = await bandService.list({ limit: 100 });
+      const fallbackBands = await bandService.list({ limit: 100, status: 'published' });
       bands.value = fallbackBands.documents || [];
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);
