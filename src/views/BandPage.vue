@@ -588,7 +588,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
-import { murekaService } from '../services/mureka';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import Chip from '../components/Chip.vue';
 import { 
