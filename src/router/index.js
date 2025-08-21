@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import BandPage from '../views/BandPage.vue';
 import Gallery from '../views/Gallery.vue';
-import StreamTest from '../views/StreamTest.vue';
 
 const routes = [
   {
