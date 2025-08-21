@@ -1,0 +1,11 @@
+{
+  "name": "generate-band",
+  "version": "1.0.0",
+  "description": "Generate band profile, album concept, and visual assets",
+  "main": "src/index.js",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "node-appwrite": "^15.0.0"
+  }
+}
