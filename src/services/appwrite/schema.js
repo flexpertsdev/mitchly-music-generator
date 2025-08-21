@@ -47,26 +47,31 @@ export const SCHEMA = {
     collectionId: COLLECTIONS.BANDS,
     name: 'Bands',
     attributes: [
-      { key: 'bandName', type: 'string', size: 255, required: true },
-      { key: 'primaryGenre', type: 'string', size: 100, required: true },
-      { key: 'status', type: 'enum', elements: Object.values(BAND_STATUS), required: true, default: BAND_STATUS.DRAFT },
+      { key: 'bandName', type: 'string', size: 255, required: false }, // Not required for draft creation
+      { key: 'primaryGenre', type: 'string', size: 255, required: false }, // Not required for draft creation
+      { key: 'status', type: 'enum', elements: Object.values(BAND_STATUS), required: false, default: BAND_STATUS.DRAFT },
       { key: 'userId', type: 'string', size: 36, required: false }, // Optional for anonymous
-      { key: 'userPrompt', type: 'string', size: 5000, required: true }, // Original user input
+      { key: 'userPrompt', type: 'string', size: 5000, required: false }, // Original user input
       { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // AI generation context
-      { key: 'profileData', type: 'string', size: 10000, required: true }, // JSON string
-      { key: 'origin', type: 'string', size: 255, required: false },
+      { key: 'profileData', type: 'string', size: 65535, required: false }, // JSON string - actual size in Appwrite
+      { key: 'origin', type: 'string', size: 100, required: false },
       { key: 'formationYear', type: 'integer', required: false },
       // Visual Assets
-      { key: 'logoUrl', type: 'url', required: false },
+      { key: 'logoUrl', type: 'string', size: 500, required: false },
       { key: 'logoPrompt', type: 'string', size: 1000, required: false },
-      { key: 'bandPhotoUrl', type: 'url', required: false },
-      { key: 'bandPhotoPrompt', type: 'string', size: 1000, required: false },
-      // Timestamps
-      { key: 'createdAt', type: 'datetime', required: true },
-      { key: 'updatedAt', type: 'datetime', required: true },
-      { key: 'publishedAt', type: 'datetime', required: false },
+      { key: 'bandPhotoUrl', type: 'string', size: 500, required: false },
+      { key: 'bandPhotoPrompt', type: 'string', size: 1000, required: false }, // Missing in Appwrite
+      // Legacy fields (still in Appwrite)
+      { key: 'imageUrl', type: 'string', size: 500, required: false },
+      { key: 'albumTitle', type: 'string', size: 255, required: false },
+      { key: 'albumDescription', type: 'string', size: 1000, required: false },
+      { key: 'trackCount', type: 'integer', required: false, default: 0 },
+      { key: 'albumCoverUrl', type: 'string', size: 500, required: false },
+      { key: 'createdBy', type: 'string', size: 50, required: false },
+      // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
+      { key: 'publishedAt', type: 'datetime', required: false }, // Missing in Appwrite
       // Error tracking
-      { key: 'generationError', type: 'string', size: 1000, required: false }
+      { key: 'generationError', type: 'string', size: 1000, required: false } // Missing in Appwrite
     ],
     indexes: [
       { key: 'status_idx', type: 'key', attributes: ['status'] },
@@ -83,22 +88,21 @@ export const SCHEMA = {
     attributes: [
       { key: 'bandId', type: 'string', size: 36, required: true },
       { key: 'title', type: 'string', size: 255, required: true },
-      { key: 'description', type: 'string', size: 2000, required: false },
-      { key: 'status', type: 'enum', elements: Object.values(ALBUM_STATUS), required: true, default: ALBUM_STATUS.DRAFT },
+      { key: 'description', type: 'string', size: 1000, required: false },
+      { key: 'concept', type: 'string', size: 2000, required: false }, // Exists in Appwrite
+      { key: 'status', type: 'enum', elements: Object.values(ALBUM_STATUS), required: false, default: ALBUM_STATUS.DRAFT },
       { key: 'userPrompt', type: 'string', size: 5000, required: false }, // Optional album-specific prompt
       { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // Album AI context
-      { key: 'trackCount', type: 'integer', required: true, default: 8 },
-      { key: 'releaseYear', type: 'integer', required: false },
-      { key: 'conceptData', type: 'string', size: 10000, required: false }, // JSON string
+      { key: 'trackCount', type: 'integer', required: false, default: 8 },
+      { key: 'releaseYear', type: 'integer', required: false }, // Missing in Appwrite
+      { key: 'conceptData', type: 'string', size: 10000, required: false }, // Missing in Appwrite - JSON string
       // Visual Assets
       { key: 'coverUrl', type: 'url', required: false },
-      { key: 'coverPrompt', type: 'string', size: 1000, required: false },
-      { key: 'backCoverUrl', type: 'url', required: false },
-      // Timestamps
-      { key: 'createdAt', type: 'datetime', required: true },
-      { key: 'updatedAt', type: 'datetime', required: true },
+      { key: 'coverPrompt', type: 'string', size: 1000, required: false }, // Missing in Appwrite
+      { key: 'backCoverUrl', type: 'url', required: false }, // Missing in Appwrite
+      // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
       // Error tracking
-      { key: 'generationError', type: 'string', size: 1000, required: false }
+      { key: 'generationError', type: 'string', size: 1000, required: false } // Missing in Appwrite
     ],
     indexes: [
       { key: 'bandId_idx', type: 'key', attributes: ['bandId'] },
@@ -113,28 +117,32 @@ export const SCHEMA = {
     name: 'Songs',
     attributes: [
       { key: 'bandId', type: 'string', size: 36, required: true },
-      { key: 'albumId', type: 'string', size: 36, required: true },
+      { key: 'albumId', type: 'string', size: 36, required: false }, // Not required in Appwrite
       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'trackNumber', type: 'integer', required: true },
-      { key: 'status', type: 'enum', elements: Object.values(SONG_STATUS), required: true, default: SONG_STATUS.PENDING },
-      { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // Song-specific AI context
-      { key: 'description', type: 'string', size: 1000, required: false },
+      { key: 'status', type: 'string', size: 50, required: false, default: 'pending' }, // Plain string in Appwrite
+      { key: 'aiInstructions', type: 'string', size: 5000, required: false }, // Missing in Appwrite
+      { key: 'description', type: 'string', size: 500, required: false },
       // Lyrics
-      { key: 'lyrics', type: 'string', size: 10000, required: false },
-      { key: 'lyricsStatus', type: 'enum', elements: Object.values(SONG_STATUS), required: false },
+      { key: 'lyrics', type: 'string', size: 10000, required: true }, // Required in Appwrite
+      { key: 'lyricsStatus', type: 'string', size: 50, required: false }, // Missing in Appwrite
+      { key: 'lyricsError', type: 'string', size: 1000, required: false }, // Missing in Appwrite
+      { key: 'lyricsGeneratedAt', type: 'datetime', required: false }, // Missing in Appwrite
       // Audio
-      { key: 'audioUrl', type: 'url', required: false },
-      { key: 'audioStatus', type: 'enum', elements: Object.values(SONG_STATUS), required: false },
-      { key: 'murekaTaskId', type: 'string', size: 255, required: false },
-      { key: 'duration', type: 'integer', required: false }, // In seconds
-      // Timestamps
-      { key: 'createdAt', type: 'datetime', required: true },
-      { key: 'updatedAt', type: 'datetime', required: true },
-      { key: 'lyricsGeneratedAt', type: 'datetime', required: false },
+      { key: 'audioUrl', type: 'string', size: 500, required: false },
+      { key: 'audioStatus', type: 'string', size: 50, required: false },
+      { key: 'murekaTaskId', type: 'string', size: 100, required: false },
+      { key: 'artistDescription', type: 'string', size: 500, required: false }, // Exists in Appwrite
+      { key: 'audioError', type: 'string', size: 500, required: false },
       { key: 'audioGeneratedAt', type: 'datetime', required: false },
-      // Error tracking
-      { key: 'lyricsError', type: 'string', size: 1000, required: false },
-      { key: 'audioError', type: 'string', size: 1000, required: false }
+      { key: 'audioCompletedAt', type: 'datetime', required: false }, // Exists in Appwrite
+      { key: 'audioFlacUrl', type: 'url', required: false }, // Exists in Appwrite
+      { key: 'audioDuration', type: 'double', required: false }, // Double in Appwrite
+      // Additional fields in Appwrite
+      { key: 'lastStatusCheck', type: 'string', size: 255, required: false },
+      { key: 'checkAttempts', type: 'integer', required: false, default: 0 },
+      { key: 'totalCheckAttempts', type: 'integer', required: false },
+      // Timestamps (Appwrite auto-generates $createdAt and $updatedAt)
     ],
     indexes: [
       { key: 'bandId_idx', type: 'key', attributes: ['bandId'] },
