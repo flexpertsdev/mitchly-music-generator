@@ -20,8 +20,64 @@
       </div>
     </div>
 
+    <!-- Generation Progress -->
+    <div v-else-if="band && (band.status === 'draft' || band.status === 'generating')" class="flex items-center justify-center min-h-screen">
+      <div class="max-w-md w-full mx-4">
+        <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800">
+          <!-- Progress Title -->
+          <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-white mb-2">Creating Your Band Profile</h2>
+            <p class="text-gray-400">{{ band.status === 'draft' ? 'Initializing...' : 'AI is crafting your unique band identity' }}</p>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="mb-6">
+            <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
+              <div 
+                class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-1000 ease-out animate-pulse"
+                :style="`width: ${band.status === 'draft' ? '20%' : '60%'}`"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-2 text-center">{{ band.status === 'draft' ? 'Starting generation...' : 'Generating band profile and visuals...' }}</p>
+          </div>
+          
+          <!-- Progress Steps -->
+          <div class="space-y-3">
+            <div :class="['flex items-center gap-3 p-3 rounded-lg transition-all', band.status !== 'draft' ? 'bg-mitchly-blue/20 border border-mitchly-blue/40' : 'bg-mitchly-dark/50 border border-gray-700']">
+              <span class="text-2xl">🎸</span>
+              <div>
+                <p class="text-sm font-medium text-white">Band Profile</p>
+                <p class="text-xs text-gray-400">Creating name, genre, and backstory</p>
+              </div>
+            </div>
+            <div :class="['flex items-center gap-3 p-3 rounded-lg transition-all', band.status === 'generating' ? 'bg-mitchly-purple/20 border border-mitchly-purple/40 animate-pulse' : 'bg-mitchly-dark/50 border border-gray-700']">
+              <span class="text-2xl">🎨</span>
+              <div>
+                <p class="text-sm font-medium text-white">Visual Identity</p>
+                <p class="text-xs text-gray-400">Generating logo and artwork</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-mitchly-dark/50 border border-gray-700">
+              <span class="text-2xl">🎵</span>
+              <div>
+                <p class="text-sm font-medium text-white">Album & Songs</p>
+                <p class="text-xs text-gray-400">Setting up track listing</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Info Message -->
+          <div class="mt-6 text-center">
+            <p class="text-sm text-gray-500">
+              This usually takes 30-60 seconds
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Band Profile -->
-    <div v-else-if="band">
+    <div v-else-if="band && band.status === 'published'">
       <!-- Hero Section with Band Image -->
       <div class="relative h-64 md:h-96 overflow-hidden">
         <!-- Background Image or Gradient (prefer album cover for hero) -->
@@ -529,10 +585,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
-import { generateSong } from '../services/anthropic';
 import { murekaService } from '../services/mureka';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import Chip from '../components/Chip.vue';
@@ -594,6 +649,9 @@ const availableAudioTracks = computed(() => {
     }));
 });
 
+// Polling interval for generation status
+let generationPollInterval = null;
+
 // Load band data
 onMounted(async () => {
   try {
@@ -602,16 +660,22 @@ onMounted(async () => {
     // Load band profile
     band.value = await bandService.get(bandId);
     
-    // Load songs
-    songs.value = await songService.getByBandId(bandId);
-    
-    // Load saved images if they exist
-    if (band.value) {
-      bandImages.value = {
-        logo: band.value.logoUrl || null,
-        albumCover: band.value.albumCoverUrl || null,
-        bandPhoto: band.value.bandPhotoUrl || null
-      };
+    // If band is still generating, poll for updates
+    if (band.value && (band.value.status === 'draft' || band.value.status === 'generating')) {
+      loading.value = false; // Show generation progress instead of loading
+      startGenerationPolling(bandId);
+    } else {
+      // Load songs and images for published bands
+      songs.value = await songService.getByBandId(bandId);
+      
+      // Load saved images if they exist
+      if (band.value) {
+        bandImages.value = {
+          logo: band.value.logoUrl || null,
+          albumCover: band.value.albumCoverUrl || null,
+          bandPhoto: band.value.bandPhotoUrl || null
+        };
+      }
     }
   } catch (err) {
     console.error('Error loading band:', err);
@@ -620,6 +684,45 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Cleanup polling on unmount
+onUnmounted(() => {
+  if (generationPollInterval) {
+    clearInterval(generationPollInterval);
+  }
+});
+
+// Poll for generation status
+const startGenerationPolling = (bandId) => {
+  generationPollInterval = setInterval(async () => {
+    try {
+      const updatedBand = await bandService.get(bandId);
+      band.value = updatedBand;
+      
+      // Check if generation is complete
+      if (updatedBand.status === 'published') {
+        clearInterval(generationPollInterval);
+        generationPollInterval = null;
+        
+        // Load songs and images
+        songs.value = await songService.getByBandId(bandId);
+        bandImages.value = {
+          logo: updatedBand.logoUrl || null,
+          albumCover: updatedBand.albumCoverUrl || null,
+          bandPhoto: updatedBand.bandPhotoUrl || null
+        };
+        
+        showToast('Band profile generated successfully!', 'success');
+      } else if (updatedBand.status === 'failed') {
+        clearInterval(generationPollInterval);
+        generationPollInterval = null;
+        error.value = 'Failed to generate band profile. Please try again.';
+      }
+    } catch (err) {
+      console.error('Error polling band status:', err);
+    }
+  }, 2000); // Poll every 2 seconds
+};
 
 // Methods
 const getSongLyrics = (trackTitle) => {
@@ -645,30 +748,65 @@ const handleGenerateSong = async (songTitle, trackNumber) => {
   generatingSongIndex.value = trackNumber - 1;
   
   try {
-    // Check if song already exists to get its ID
-    const existingSong = songs.value.find(s => s.title === songTitle);
+    let song = songs.value.find(s => s.title === songTitle);
     
-    // Pass songId if it exists, otherwise pass bandId for creation
-    const generatedSong = await generateSong(
-      songTitle, 
-      trackNumber, 
-      bandProfile.value,
-      existingSong?.$id || null,
-      band.value.$id
-    );
+    if (!song) {
+      // Create new song with generating status
+      song = await songService.create({
+        bandId: band.value.$id,
+        title: songTitle,
+        trackNumber: trackNumber,
+        status: 'generating', // Triggers lyrics generation
+        audioStatus: 'pending',
+        primaryGenre: band.value.primaryGenre || 'Rock',
+        description: `Track ${trackNumber} from ${band.value.name}`
+      });
+      // Add to local songs array
+      songs.value.push(song);
+    } else {
+      // Update existing song to trigger lyrics generation
+      await songService.update(song.$id, {
+        status: 'generating'
+      });
+    }
     
-    // The Netlify function now handles database updates directly
-    // Just reload the songs to get the updated data
+    // Start polling for completion
+    const pollInterval = setInterval(async () => {
+      try {
+        const updatedSong = await songService.get(song.$id);
+        
+        if (updatedSong.status === 'completed') {
+          clearInterval(pollInterval);
+          // Update the song in our local array
+          const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+          if (songIndex !== -1) {
+            songs.value[songIndex] = updatedSong;
+          }
+          expandedTracks.value[trackNumber - 1] = true;
+          showToast('Lyrics generated successfully!', 'success');
+          generatingSongIndex.value = null;
+        } else if (updatedSong.status === 'failed') {
+          clearInterval(pollInterval);
+          showToast('Failed to generate lyrics', 'error');
+          generatingSongIndex.value = null;
+        }
+      } catch (err) {
+        console.error('Error polling song status:', err);
+      }
+    }, 2000);
     
-    // Reload songs to get updated data
-    songs.value = await songService.getByBandId(band.value.$id);
+    // Stop polling after 60 seconds
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      if (generatingSongIndex.value === trackNumber - 1) {
+        generatingSongIndex.value = null;
+        showToast('Lyrics generation timed out. Please try again.', 'error');
+      }
+    }, 60000);
     
-    // Expand the track to show the generated lyrics
-    expandedTracks.value[trackNumber - 1] = true;
   } catch (error) {
     console.error('Error generating song:', error);
     showToast('Failed to generate song. Please try again.', 'error');
-  } finally {
     generatingSongIndex.value = null;
   }
 };
@@ -681,32 +819,60 @@ const handleGenerateAudio = async (songTitle) => {
     audioGenerationStatus.value[songTitle] = { status: 'processing' };
     showToast('Starting audio generation...', 'info');
     
-    // Format lyrics for Mureka
-    const formattedLyrics = murekaService.formatLyricsForMureka(song.lyrics);
-    
-    // Generate prompt from band profile and song description
-    const prompt = `${bandProfile.value.primaryGenre} style, ${bandProfile.value.vocalStyle?.type || bandProfile.value.vocalStyle}. ${bandProfile.value.coreSound}. Song: "${songTitle}". ${song.description || ''}`;
-    
-    // Start audio generation using the new API format
-    const task = await murekaService.generateAudio(songTitle, prompt, formattedLyrics, song.$id);
-    
-    // Poll for completion
-    const result = await murekaService.pollAudioGeneration(task.taskId, (status) => {
-      console.log('Audio generation progress:', status);
-    }, song.$id);
-    
-    if (result.audioUrl) {
-      // The check-audio-status function already updates the song in the database
-      // Just reload songs to get the updated data
-      songs.value = await songService.getByBandId(band.value.$id);
-      
-      audioGenerationStatus.value[songTitle] = { status: 'completed' };
-      showToast(`Audio for "${songTitle}" is ready!`, 'success');
+    if (!song.lyrics) {
+      throw new Error('Please generate lyrics first');
     }
+    
+    // Update song to trigger audio generation via Appwrite function
+    await songService.update(song.$id, {
+      audioStatus: 'generating',
+      audioGenerationStartedAt: new Date().toISOString()
+    });
+    
+    // Poll for audio completion
+    const pollInterval = setInterval(async () => {
+      try {
+        const updatedSong = await songService.get(song.$id);
+        
+        if (updatedSong.audioStatus === 'completed' && updatedSong.audioUrl) {
+          clearInterval(pollInterval);
+          // Update local song data
+          const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+          if (songIndex !== -1) {
+            songs.value[songIndex] = updatedSong;
+          }
+          audioGenerationStatus.value[songTitle] = { status: 'completed' };
+          showToast(`Audio for "${songTitle}" is ready!`, 'success');
+        } else if (updatedSong.audioStatus === 'failed') {
+          clearInterval(pollInterval);
+          audioGenerationStatus.value[songTitle] = { status: 'failed' };
+          const errorMsg = updatedSong.audioError || 'Failed to generate audio';
+          showToast(errorMsg, 'error');
+        } else if (updatedSong.audioStatus === 'processing') {
+          // Update status to show it's being processed by Mureka
+          audioGenerationStatus.value[songTitle] = { 
+            status: 'processing',
+            message: 'Audio is being processed by Mureka...'
+          };
+        }
+      } catch (err) {
+        console.error('Error polling audio status:', err);
+      }
+    }, 3000); // Poll every 3 seconds
+    
+    // Stop polling after 5 minutes (audio generation takes longer)
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      if (audioGenerationStatus.value[songTitle]?.status !== 'completed') {
+        audioGenerationStatus.value[songTitle] = { status: 'failed' };
+        showToast('Audio generation timed out. Please try again.', 'error');
+      }
+    }, 300000);
+    
   } catch (error) {
     console.error('Error generating audio:', error);
     audioGenerationStatus.value[songTitle] = { status: 'failed' };
-    showToast('Failed to generate audio. Please try again.', 'error');
+    showToast(error.message || 'Failed to generate audio. Please try again.', 'error');
   }
 };
 

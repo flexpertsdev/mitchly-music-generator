@@ -2,12 +2,23 @@
  * Appwrite Storage Service
  * Handles file uploads and storage operations
  */
-import { Storage, ID } from 'appwrite';
-import { client, serviceStatus } from './index.js';
+import { Client, Storage, ID } from 'appwrite';
 import { STORAGE_BUCKET } from './schema.js';
+
+// Initialize client locally to avoid circular dependency
+const client = new Client()
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || 'flexos');
 
 // Initialize storage service
 const storage = new Storage(client);
+
+// Service status (shared with other services)
+export const serviceStatus = {
+  isAvailable: true,
+  lastCheck: 0,
+  checkInterval: 30000
+};
 
 // Storage operations
 export const storageService = {

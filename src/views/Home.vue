@@ -71,8 +71,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import ConceptInput from '../components/ConceptInput.vue';
-// Removed: import { generateBandProfileStream } from '../services/anthropic';
-import { bandService, getAppwriteStatus } from '../services/appwrite';
+import { bandService, serviceStatus } from '../services/appwrite';
 import { 
   Music4, 
   CheckCircle, 
@@ -106,15 +105,15 @@ const progressSteps = [
 // Load recent bands on mount
 onMounted(async () => {
   // Check app status
-  appStatus.value = getAppwriteStatus();
+  appStatus.value = { ...serviceStatus };
   
   try {
     recentBands.value = await bandService.list(6);
     // Update status after successful load
-    appStatus.value = getAppwriteStatus();
+    appStatus.value = { ...serviceStatus };
   } catch (error) {
     console.error('Error loading recent bands:', error);
-    appStatus.value = getAppwriteStatus();
+    appStatus.value = { ...serviceStatus };
     
     // Show offline mode notification if Appwrite is unavailable
     if (!appStatus.value.isAvailable) {
@@ -124,7 +123,7 @@ onMounted(async () => {
   
   // Check status periodically
   setInterval(() => {
-    const newStatus = getAppwriteStatus();
+    const newStatus = { ...serviceStatus };
     if (newStatus.isAvailable !== appStatus.value.isAvailable) {
       appStatus.value = newStatus;
       if (newStatus.isAvailable) {

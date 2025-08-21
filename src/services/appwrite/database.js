@@ -2,12 +2,23 @@
  * Appwrite Database Service
  * Handles all database operations for bands, albums, and songs
  */
-import { Databases, ID, Query } from 'appwrite';
-import { client, serviceStatus } from './index.js';
+import { Client, Databases, ID, Query } from 'appwrite';
 import { DATABASE_ID, COLLECTIONS, BAND_STATUS, ALBUM_STATUS, SONG_STATUS } from './schema.js';
+
+// Initialize client locally to avoid circular dependency
+const client = new Client()
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || 'flexos');
 
 // Initialize database service
 const databases = new Databases(client);
+
+// Service status (shared with other services)
+export const serviceStatus = {
+  isAvailable: true,
+  lastCheck: 0,
+  checkInterval: 30000
+};
 
 // Check service availability
 async function checkServiceAvailability() {
