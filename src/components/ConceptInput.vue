@@ -57,12 +57,12 @@
             
             <button
               @click="handleGenerate"
-              :disabled="loading || !conceptText.trim()"
+              :disabled="loading || isCreating || !conceptText.trim()"
               class="w-full py-3 sm:py-4 bg-mitchly-blue text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:bg-mitchly-blue/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
             >
               <Zap v-if="!loading" class="w-5 h-5" />
               <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>{{ loading ? 'Generating...' : 'Generate Project' }}</span>
+              <span>{{ loading || isCreating ? 'Creating...' : 'Generate Project' }}</span>
             </button>
           </div>
         </div>
@@ -167,12 +167,12 @@
           
           <button
             @click="handleAdvancedGenerate"
-            :disabled="loading || !formData.bandName || !formData.genre"
+            :disabled="loading || isCreating || !formData.bandName || !formData.genre"
             class="w-full py-3 sm:py-4 bg-mitchly-blue text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl hover:bg-mitchly-blue/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
           >
             <Zap v-if="!loading" class="w-5 h-5" />
             <div v-else class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span>{{ loading ? 'Generating...' : 'Generate Profile' }}</span>
+            <span>{{ loading || isCreating ? 'Creating...' : 'Generate Profile' }}</span>
           </button>
         </div>
       </div>
@@ -183,6 +183,8 @@
 <script>
 import { ref } from 'vue'
 import { Zap } from 'lucide-vue-next'
+import { bandService } from '../services/appwrite/database'
+import { ID } from 'appwrite'
 
 export default {
   name: 'ConceptInput',
@@ -195,10 +197,11 @@ export default {
       default: false
     }
   },
-  emits: ['generate'],
+  emits: ['generate', 'bandCreated'],
   setup(props, { emit }) {
     const activeTab = ref('simple')
     const conceptText = ref('')
+    const isCreating = ref(false)
     const formData = ref({
       bandName: '',
       genre: '',
@@ -209,26 +212,81 @@ export default {
       concept: ''
     })
 
-    const handleGenerate = () => {
-      if (conceptText.value.trim()) {
-        emit('generate', conceptText.value)
+    const handleGenerate = async () => {
+      if (conceptText.value.trim() && !isCreating.value) {
+        isCreating.value = true
+        try {
+          // Create band document with status 'draft'
+          const bandData = {
+            prompt: conceptText.value,
+            status: 'draft',
+            name: 'Generating...', // Placeholder name
+            createdAt: new Date().toISOString()
+          }
+          
+          const band = await bandService.create(bandData)
+          
+          // Emit the band creation event
+          emit('bandCreated', band)
+          
+          // Reset form
+          conceptText.value = ''
+        } catch (error) {
+          console.error('Error creating band:', error)
+          emit('generate', { error: error.message })
+        } finally {
+          isCreating.value = false
+        }
       }
     }
 
-    const handleAdvancedGenerate = () => {
-      // Pass structured data for advanced mode
-      emit('generate', {
-        prompt: formData.value.concept || `Create a ${formData.value.genre} band called ${formData.value.bandName}`,
-        advancedData: {
-          bandName: formData.value.bandName,
-          genre: formData.value.genre,
-          albumName: formData.value.albumName,
-          trackCount: formData.value.trackCount,
-          influences: formData.value.influences,
-          themes: formData.value.themes,
-          concept: formData.value.concept
+    const handleAdvancedGenerate = async () => {
+      if (formData.value.bandName && formData.value.genre && !isCreating.value) {
+        isCreating.value = true
+        try {
+          // Prepare the prompt
+          const prompt = formData.value.concept || 
+            `Create a ${formData.value.genre} band called ${formData.value.bandName}`
+          
+          // Create band document with status 'draft' and advanced data
+          const bandData = {
+            prompt: prompt,
+            status: 'draft',
+            name: formData.value.bandName || 'Generating...',
+            advancedData: {
+              bandName: formData.value.bandName,
+              genre: formData.value.genre,
+              albumName: formData.value.albumName,
+              trackCount: formData.value.trackCount,
+              influences: formData.value.influences,
+              themes: formData.value.themes,
+              concept: formData.value.concept
+            },
+            createdAt: new Date().toISOString()
+          }
+          
+          const band = await bandService.create(bandData)
+          
+          // Emit the band creation event
+          emit('bandCreated', band)
+          
+          // Reset form
+          formData.value = {
+            bandName: '',
+            genre: '',
+            albumName: '',
+            trackCount: 8,
+            influences: '',
+            themes: '',
+            concept: ''
+          }
+        } catch (error) {
+          console.error('Error creating band:', error)
+          emit('generate', { error: error.message })
+        } finally {
+          isCreating.value = false
         }
-      });
+      }
     }
 
     return {
@@ -236,7 +294,8 @@ export default {
       conceptText,
       formData,
       handleGenerate,
-      handleAdvancedGenerate
+      handleAdvancedGenerate,
+      isCreating
     }
   }
 }

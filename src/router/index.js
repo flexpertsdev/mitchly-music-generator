@@ -21,11 +21,7 @@ const routes = [
     name: 'Gallery',
     component: Gallery
   },
-  {
-    path: '/stream-test',
-    name: 'StreamTest',
-    component: StreamTest
-  }
+ 
 ];
 
 const router = createRouter({

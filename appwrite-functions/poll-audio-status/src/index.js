@@ -14,6 +14,9 @@ import { Client, Databases, Query } from 'node-appwrite';
 const DATABASE_ID = 'mitchly-music-db';
 const SONGS_COLLECTION = 'songs';
 const MUREKA_STATUS_URL = 'https://api.mureka.ai/v2/music/status';
+const RATE_LIMIT_COOLDOWN = 20000; // 20 seconds between checks per song
+const INITIAL_DELAY = 30000; // Don't check songs for first 30 seconds
+const API_CALL_DELAY = 500; // 500ms delay between API calls
 
 export default async ({ req, res, log, error }) => {
   try {
@@ -28,14 +31,25 @@ export default async ({ req, res, log, error }) => {
     const databases = new Databases(client);
     
     // Find all songs with audioStatus 'processing'
+    // Skip songs that were:
+    // 1. Created less than 30 seconds ago (give Mureka time to start)
+    // 2. Checked less than 20 seconds ago (rate limit protection)
+    const cutoffTime = new Date(Date.now() - RATE_LIMIT_COOLDOWN).toISOString();
+    const initialDelayCutoff = new Date(Date.now() - INITIAL_DELAY).toISOString();
+    
+    const queries = [
+      Query.equal('audioStatus', 'processing'),
+      Query.isNotNull('murekaTaskId'),
+      Query.lessThan('audioGenerationStartedAt', initialDelayCutoff),
+      Query.limit(25) // Process up to 25 songs per run
+    ];
+    
+    // Only add lastStatusCheck query if we want to filter by it
+    // Some songs might not have this field yet
     const processingSongs = await databases.listDocuments(
       DATABASE_ID,
       SONGS_COLLECTION,
-      [
-        Query.equal('audioStatus', 'processing'),
-        Query.isNotNull('murekaTaskId'),
-        Query.limit(25) // Process up to 25 songs per run
-      ]
+      queries
     );
     
     log(`Found ${processingSongs.total} songs to check`);
@@ -50,13 +64,35 @@ export default async ({ req, res, log, error }) => {
     const results = {
       completed: 0,
       failed: 0,
-      stillProcessing: 0
+      stillProcessing: 0,
+      skipped: 0
     };
     
     // Check each song's status
     for (const song of processingSongs.documents) {
       try {
+        // Skip if checked too recently (additional safety check)
+        if (song.lastStatusCheck) {
+          const lastCheck = new Date(song.lastStatusCheck).getTime();
+          if (Date.now() - lastCheck < RATE_LIMIT_COOLDOWN) {
+            log(`Skipping song ${song.$id} - checked too recently`);
+            results.skipped++;
+            continue;
+          }
+        }
+        
         log(`Checking status for song ${song.$id} (${song.title})`);
+        
+        // Update last check time immediately to prevent race conditions
+        await databases.updateDocument(
+          DATABASE_ID,
+          SONGS_COLLECTION,
+          song.$id,
+          {
+            lastStatusCheck: new Date().toISOString(),
+            checkAttempts: (song.checkAttempts || 0) + 1
+          }
+        );
         
         // Call Mureka status API
         const statusResponse = await fetch(`${MUREKA_STATUS_URL}/${song.murekaTaskId}`, {
@@ -87,7 +123,8 @@ export default async ({ req, res, log, error }) => {
                   audioStatus: 'completed',
                   audioUrl: statusData.audio_url || statusData.download_url,
                   audioDuration: statusData.duration || null,
-                  audioGeneratedAt: new Date().toISOString()
+                  audioCompletedAt: new Date().toISOString(),
+                  totalCheckAttempts: (song.checkAttempts || 0) + 1
                 }
               );
               results.completed++;
@@ -145,6 +182,11 @@ export default async ({ req, res, log, error }) => {
             results.stillProcessing++;
         }
         
+        // Add delay between API calls to respect rate limits
+        if (processingSongs.documents.indexOf(song) < processingSongs.documents.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY));
+        }
+        
       } catch (songError) {
         error(`Error checking song ${song.$id}: ${songError.message}`);
         
@@ -166,12 +208,14 @@ export default async ({ req, res, log, error }) => {
       }
     }
     
-    log(`Polling complete - Completed: ${results.completed}, Failed: ${results.failed}, Still Processing: ${results.stillProcessing}`);
+    log(`Polling complete - Completed: ${results.completed}, Failed: ${results.failed}, Still Processing: ${results.stillProcessing}, Skipped: ${results.skipped}`);
     
     return res.json({
       success: true,
       results: results,
-      message: `Processed ${processingSongs.total} songs`
+      totalFound: processingSongs.total,
+      totalProcessed: results.completed + results.failed + results.stillProcessing,
+      message: `Processed ${results.completed + results.failed + results.stillProcessing} songs out of ${processingSongs.total} found`
     });
     
   } catch (err) {

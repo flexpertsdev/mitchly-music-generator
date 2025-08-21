@@ -33,66 +33,14 @@
         <!-- Input Form - Hidden when generating -->
         <transition name="fade">
           <ConceptInput 
-            v-if="!generating"
-            @generate="handleGenerate" 
+          v-if="!generating"
+          @generate="handleGenerate"
+          @bandCreated="handleBandCreated" 
             :loading="generating"
-          />
+        />
         </transition>
 
-        <!-- Progress Overlay - Shows when generating -->
-        <transition name="fade">
-          <div v-if="generating && progressData" class="w-full">
-            <div class="bg-mitchly-gray rounded-xl p-6 border border-gray-800">
-              <!-- Progress Bar -->
-              <div class="mb-4">
-                <div class="w-full bg-mitchly-dark rounded-full h-3 overflow-hidden">
-                  <div 
-                    class="bg-gradient-to-r from-mitchly-blue to-mitchly-purple h-full transition-all duration-1000 ease-out"
-                    :style="`width: ${progressData.progress}%`"
-                  />
-                </div>
-                <p class="text-sm text-gray-400 mt-2 text-center">{{ progressData.progress }}%</p>
-              </div>
-              
-              <!-- Progress Message -->
-              <div class="text-center mb-6">
-                <p class="text-lg text-white font-medium animate-pulse">
-                  {{ progressData.message }}
-                </p>
-                <p class="text-sm text-gray-500 mt-2">
-                  Creating your unique band profile...
-                </p>
-              </div>
-              
-              <!-- Progress Steps Visual -->
-              <div class="grid grid-cols-3 gap-2">
-                <div 
-                  v-for="step in progressSteps" 
-                  :key="step.id"
-                  :class="[
-                    'text-center p-3 rounded-lg transition-all duration-500',
-                    progressData.progress >= step.minProgress 
-                      ? 'bg-mitchly-blue/20 border border-mitchly-blue/40 scale-105' 
-                      : 'bg-mitchly-dark/50 border border-gray-700'
-                  ]"
-                >
-                  <span class="text-2xl md:text-3xl block mb-1">{{ step.emoji }}</span>
-                  <p class="text-xs text-gray-400">{{ step.name }}</p>
-                </div>
-              </div>
-
-              <!-- Cancel Button (optional) -->
-              <div class="mt-6 text-center">
-                <button 
-                  @click="cancelGeneration"
-                  class="text-gray-500 hover:text-gray-300 text-sm transition-colors"
-                >
-                  Cancel Generation
-                </button>
-              </div>
-            </div>
-          </div>
-        </transition>
+        <!-- Progress section removed - now handled on band page -->
       </div>
   
     </div>
@@ -123,7 +71,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import ConceptInput from '../components/ConceptInput.vue';
-import { generateBandProfileStream } from '../services/anthropic';
+// Removed: import { generateBandProfileStream } from '../services/anthropic';
 import { bandService, getAppwriteStatus } from '../services/appwrite';
 import { 
   Music4, 
@@ -190,88 +138,28 @@ onMounted(async () => {
 
 // Handlers
 const handleGenerate = async (data) => {
-  generating.value = true;
-  progressData.value = { progress: 0, message: 'Starting...', step: 'start' };
-  
-  try {
-    let prompt = data;
-    let advancedData = null;
+  // Legacy handler for error cases
+  if (data && data.error) {
+    showToast('error', 'Failed to create band', data.error);
+  }
+};
+
+const handleBandCreated = async (band) => {
+  if (band && band.$id) {
+    showToast('success', 'Band Created!', 'Redirecting to your band page...');
     
-    // Check if data is an object (advanced mode)
-    if (typeof data === 'object' && data.prompt) {
-      prompt = data.prompt;
-      advancedData = data.advancedData;
-    }
-    
-    // Use streaming version with progress callback
-    let generatedBand = null;
-    
-    try {
-      generatedBand = await generateBandProfileStream(
-        prompt, 
-        advancedData,
-        (progress) => {
-          progressData.value = progress;
-        }
-      );
-    } catch (error) {
-      // Handle timeout errors (504) - the band might still have been created
-      if (error.message.includes('504')) {
-        console.log('Function timed out, checking if band was created...');
-        progressData.value = { progress: 95, message: '⏳ Function timed out, checking results...', step: 'checking' };
-        
-        // Wait a bit then check recent bands
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        try {
-          // Get the most recent band
-          const recentBands = await bandService.list(1);
-          if (recentBands.length > 0) {
-            const latestBand = recentBands[0];
-            // Check if it was created recently (within last minute)
-            const createdTime = new Date(latestBand.$createdAt).getTime();
-            const now = Date.now();
-            if (now - createdTime < 60000) { // Created within last minute
-              generatedBand = latestBand;
-              console.log('Found recently created band:', latestBand.$id);
-            }
-          }
-        } catch (checkError) {
-          console.error('Error checking for recent band:', checkError);
-        }
-      }
-      
-      // If not a timeout, re-throw the error
-      if (!error.message.includes('504')) {
-        throw error;
-      }
-    }
-    
-    if (generatedBand && generatedBand.$id) {
-      showToast('success', 'Band Created!', 'Your band profile has been generated with visuals');
-      
-      // Small delay to show completion
-      progressData.value = { progress: 100, message: '🎉 Band profile complete!', step: 'complete' };
-      
-      setTimeout(() => {
-        router.push(`/band/${generatedBand.$id}`);
-      }, 1000);
-    } else {
-      throw new Error('Band creation failed - unable to retrieve band data');
-    }
-  } catch (error) {
-    console.error('Error generating band profile:', error);
-    showToast('error', 'Generation Failed', error.message);
-  } finally {
-    generating.value = false;
-    progressData.value = null;
+    // Navigate to band page immediately
+    // The band page will handle showing generation progress
+    setTimeout(() => {
+      router.push(`/band/${band.$id}`);
+    }, 500);
   }
 };
 
 const cancelGeneration = () => {
+  // This is now handled on the band page
   generating.value = false;
   progressData.value = null;
-  showToast('info', 'Cancelled', 'Band generation cancelled');
 };
 
 const showToast = (type, title, message) => {
