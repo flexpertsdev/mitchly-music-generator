@@ -1,0 +1,25 @@
+{
+  "projectId": "flexos",
+  "projectName": "FlexOS",
+  "functions": [
+    {
+      "$id": "generate-band",
+      "name": "Generate Band",
+      "runtime": "node-18.0",
+      "entrypoint": "src/index.js",
+      "commands": "npm install",
+      "events": [
+        "databases.mitchly-music-db.collections.bands.documents.*.create",
+        "databases.mitchly-music-db.collections.bands.documents.*.update"
+      ],
+      "schedule": "",
+      "timeout": 300,
+      "enabled": true,
+      "logging": true,
+      "vars": {
+        "APPWRITE_FUNCTION_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+        "APPWRITE_FUNCTION_PROJECT_ID": "flexos"
+      }
+    }
+  ]
+}

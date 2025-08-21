@@ -20,16 +20,25 @@ const SONGS_COLLECTION = 'songs';
 
 export default async ({ req, res, log, error }) => {
   try {
+    log('Function triggered with body:', JSON.stringify(req.body));
+    log('Environment variables present:', {
+      hasAppwriteKey: !!req.variables.APPWRITE_API_KEY,
+      hasAnthropicKey: !!req.variables.ANTHROPIC_API_KEY,
+      hasFalKey: !!req.variables.FAL_API_KEY
+    });
+    
     // Parse the event data
     const event = req.body;
     
     // Check if this is a band creation event
     if (!event.$id || event.$collection !== BANDS_COLLECTION) {
+      log(`Not a band event. Collection: ${event.$collection}, Expected: ${BANDS_COLLECTION}`);
       return res.json({ success: false, message: 'Not a band creation event' });
     }
     
     // Check if band is in draft status
     if (event.status !== 'draft') {
+      log(`Band status is ${event.status}, not draft. Skipping.`);
       return res.json({ success: false, message: 'Band is not in draft status' });
     }
     
