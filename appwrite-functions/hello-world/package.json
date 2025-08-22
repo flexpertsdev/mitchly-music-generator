@@ -1,0 +1,14 @@
+{
+  "name": "hello-world",
+  "version": "1.0.0",
+  "description": "Simple Hello World Appwrite Function",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "test": "node src/main.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
