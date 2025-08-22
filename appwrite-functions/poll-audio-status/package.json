@@ -5,9 +5,12 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"No tests yet\""
+    "test": "node ../test/test-function.js poll"
   },
   "dependencies": {
     "node-appwrite": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

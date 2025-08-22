@@ -10,7 +10,7 @@ const setup = async () => {
   
   try {
     const client = new Client()
-      .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
+      .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || 'https://cloud.appwrite.io/v1')
       .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
       .setKey(process.env.APPWRITE_FUNCTION_API_KEY);
     
@@ -32,8 +32,8 @@ const setup = async () => {
       }
     }
     
-    // Check collections
-    for (const collection of DATABASE_CONFIG.COLLECTIONS) {
+    // Check and create collections
+    for (const [collectionKey, collection] of Object.entries(DATABASE_CONFIG.COLLECTIONS)) {
       try {
         await databases.getCollection(DATABASE_CONFIG.DATABASE_ID, collection.id);
         console.log(`Collection ${collection.id} exists`);
@@ -52,6 +52,24 @@ const setup = async () => {
           for (const attr of collection.attributes) {
             console.log(`Creating attribute ${attr.key}...`);
             await createAttribute(databases, collection.id, attr);
+            // Wait a bit between attribute creation to avoid rate limits
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
+          // Create indexes if defined
+          if (collection.indexes) {
+            for (const index of collection.indexes) {
+              console.log(`Creating index ${index.key}...`);
+              await databases.createIndex(
+                DATABASE_CONFIG.DATABASE_ID,
+                collection.id,
+                index.key,
+                index.type,
+                index.attributes,
+                index.orders
+              );
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
           }
         } else {
           throw error;
@@ -83,6 +101,15 @@ const createAttribute = async (databases, collectionId, attr) => {
         attr.array
       );
       break;
+    case 'integer':
+      await databases.createIntegerAttribute(
+        ...baseParams,
+        attr.min,
+        attr.max,
+        attr.default,
+        attr.array
+      );
+      break;
     case 'boolean':
       await databases.createBooleanAttribute(
         ...baseParams,
@@ -100,4 +127,7 @@ const createAttribute = async (databases, collectionId, attr) => {
   }
 };
 
-setup();
+// Run setup if called directly
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  setup();
+}

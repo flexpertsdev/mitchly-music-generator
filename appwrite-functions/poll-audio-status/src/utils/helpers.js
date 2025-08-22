@@ -1,6 +1,10 @@
-import { POLLING_CONFIG } from '../config.js';
+import { POLLING_CONFIG, MUREKA_CONFIG } from '../config.js';
 
-export const shouldSkipSong = (song) => {
+export const shouldSkipSong = (song, forceCheck = false) => {
+  if (forceCheck) {
+    return false;
+  }
+  
   if (!song.lastStatusCheck) {
     return false;
   }
@@ -18,3 +22,46 @@ export const isTimeout = (song) => {
 };
 
 export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const getStatusCategory = (status) => {
+  const normalizedStatus = status?.toLowerCase();
+  
+  if (MUREKA_CONFIG.VALID_STATUSES.COMPLETED.includes(normalizedStatus)) {
+    return 'completed';
+  }
+  
+  if (MUREKA_CONFIG.VALID_STATUSES.FAILED.includes(normalizedStatus)) {
+    return 'failed';
+  }
+  
+  if (MUREKA_CONFIG.VALID_STATUSES.PROCESSING.includes(normalizedStatus)) {
+    return 'processing';
+  }
+  
+  return 'unknown';
+};
+
+export const parseRequestBody = (body) => {
+  // Handle different body formats
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body);
+    } catch (e) {
+      return {};
+    }
+  }
+  return body || {};
+};
+
+export const validateEnvironment = () => {
+  const required = [
+    'APPWRITE_FUNCTION_PROJECT_ID',
+    'MUREKA_API_KEY'
+  ];
+  
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+};

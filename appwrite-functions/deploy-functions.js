@@ -1,210 +1,247 @@
-#!/usr/bin/env node
-
-/**
- * Deploy all Appwrite functions
- * This script handles the deployment of all functions in the appwrite-functions directory
- */
-
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
-import path from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import dotenv from 'dotenv';
 
+// Get current directory
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-// Configuration
-const functions = [
-  {
-    id: 'generate-band',
-    name: 'Generate Band',
-    entrypoint: 'src/index.js',
-    events: ['databases.mitchly-music-db.collections.bands.documents.*.create'],
-    envVars: {
-      'APPWRITE_ENDPOINT': 'https://fra.cloud.appwrite.io/v1',
-      'APPWRITE_PROJECT_ID': 'flexos',
-      'APPWRITE_API_KEY': process.env.APPWRITE_API_KEY,
-      'ANTHROPIC_API_KEY': process.env.ANTHROPIC_API_KEY,
-      'FAL_API_KEY': process.env.FAL_API_KEY
-    }
-  },
-  {
-    id: 'generate-lyrics',
-    name: 'Generate Lyrics',
-    entrypoint: 'src/index.js',
-    events: ['databases.mitchly-music-db.collections.songs.documents.*.update'],
-    envVars: {
-      'APPWRITE_ENDPOINT': 'https://fra.cloud.appwrite.io/v1',
-      'APPWRITE_PROJECT_ID': 'flexos',
-      'APPWRITE_API_KEY': process.env.APPWRITE_API_KEY,
-      'ANTHROPIC_API_KEY': process.env.ANTHROPIC_API_KEY
-    }
-  },
-  {
-    id: 'generate-audio',
-    name: 'Generate Audio',
-    entrypoint: 'src/index.js',
-    events: ['databases.mitchly-music-db.collections.songs.documents.*.update'],
-    envVars: {
-      'APPWRITE_ENDPOINT': 'https://fra.cloud.appwrite.io/v1',
-      'APPWRITE_PROJECT_ID': 'flexos',
-      'APPWRITE_API_KEY': process.env.APPWRITE_API_KEY,
-      'MUREKA_API_KEY': process.env.MUREKA_API_KEY
-    }
-  },
-  {
-    id: 'poll-audio-status',
-    name: 'Poll Audio Status',
-    entrypoint: 'src/index.js',
-    schedule: '*/5 * * * *', // Every 5 minutes
-    envVars: {
-      'APPWRITE_ENDPOINT': 'https://fra.cloud.appwrite.io/v1',
-      'APPWRITE_PROJECT_ID': 'flexos',
-      'APPWRITE_API_KEY': process.env.APPWRITE_API_KEY,
-      'MUREKA_API_KEY': process.env.MUREKA_API_KEY
-    }
+// Load environment variables
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+class AppwriteFunctionDeployer {
+  constructor(projectId, apiKey, endpoint = 'https://cloud.appwrite.io/v1') {
+    this.projectId = projectId;
+    this.apiKey = apiKey;
+    this.endpoint = endpoint;
+    this.functions = [];
   }
-];
-
-// Color output
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m'
-};
-
-function log(message, color = 'reset') {
-  console.log(`${colors[color]}${message}${colors.reset}`);
-}
-
-function execCommand(command, silent = false) {
-  try {
-    const output = execSync(command, { 
-      encoding: 'utf8',
-      stdio: silent ? 'pipe' : 'inherit'
-    });
-    return output;
-  } catch (error) {
-    if (!silent) {
-      log(`Error executing: ${command}`, 'red');
-      log(error.message, 'red');
+  
+  /**
+   * Load function configuration
+   */
+  loadFunctionConfig(functionDir) {
+    const configPath = join(__dirname, functionDir, 'appwrite.json');
+    
+    if (!existsSync(configPath)) {
+      throw new Error(`No appwrite.json found in ${functionDir}`);
     }
-    throw error;
+    
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    const functionName = Object.keys(config)[0];
+    
+    return {
+      name: functionName,
+      path: join(__dirname, functionDir),
+      config: config[functionName]
+    };
   }
-}
-
-async function deployFunction(func) {
-  log(`\nDeploying ${func.name}...`, 'blue');
   
-  const functionPath = path.join(__dirname, 'appwrite-functions', func.id);
-  
-  try {
-    // Check if function exists
+  /**
+   * Deploy a single function
+   */
+  async deployFunction(functionInfo) {
+    const { name, path, config } = functionInfo;
+    
+    console.log(`\
+🚀 Deploying function: ${name}`);
+    console.log(`   Path: ${path}`);
+    
     try {
-      execCommand(`appwrite functions get --functionId="${func.id}"`, true);
-      log(`Function ${func.id} already exists`, 'yellow');
-    } catch {
-      // Create function if it doesn't exist
-      log(`Creating function ${func.id}...`, 'yellow');
-      execCommand(`appwrite functions create --functionId="${func.id}" --name="${func.name}" --runtime="node-18.0" --execute="any"`);
-    }
-    
-    // Update function configuration
-    log(`Updating function configuration...`, 'yellow');
-    
-    // Set events or schedule
-    if (func.events) {
-      const eventsStr = func.events.join(',');
-      execCommand(`appwrite functions update --functionId="${func.id}" --events="${eventsStr}" --timeout=900`);
-    } else if (func.schedule) {
-      execCommand(`appwrite functions update --functionId="${func.id}" --schedule="${func.schedule}" --timeout=900`);
-    }
-    
-    // Set environment variables
-    log(`Setting environment variables...`, 'yellow');
-    for (const [key, value] of Object.entries(func.envVars)) {
-      if (!value) {
-        log(`Warning: ${key} is not set. Please set it manually.`, 'yellow');
-        continue;
-      }
-      
+      // Check if function exists
+      let functionId;
       try {
-        execCommand(`appwrite functions deleteVariable --functionId="${func.id}" --variableId="${key}"`, true);
-      } catch {
-        // Variable doesn't exist, that's fine
+        const listCmd = `appwrite functions list --projectId ${this.projectId} --parseOutput --limit 100`;
+        const functions = JSON.parse(execSync(listCmd, { encoding: 'utf8' }));
+        const existingFunction = functions.functions.find(f => f.name === config.name);
+        
+        if (existingFunction) {
+          functionId = existingFunction.$id;
+          console.log(`   Found existing function: ${functionId}`);
+          
+          // Update function
+          const updateCmd = `appwrite functions update \\\\
+            --functionId ${functionId} \\\\
+            --name \"${config.name}\" \\\\
+            --runtime \"${config.runtime}\" \\\\
+            --execute ${JSON.stringify(config.execute)} \\\\
+            --events ${JSON.stringify(config.events)} \\\\
+            --schedule \"${config.schedule}\" \\\\
+            --timeout ${config.timeout} \\\\
+            --enabled ${config.enabled} \\\\
+            --logging ${config.logging} \\\\
+            --projectId ${this.projectId}`;
+          
+          execSync(updateCmd, { stdio: 'inherit' });
+        } else {
+          // Create new function
+          console.log('   Creating new function...');
+          const createCmd = `appwrite functions create \\\\
+            --functionId \"unique()\" \\\\
+            --name \"${config.name}\" \\\\
+            --runtime \"${config.runtime}\" \\\\
+            --execute ${JSON.stringify(config.execute)} \\\\
+            --events ${JSON.stringify(config.events)} \\\\
+            --schedule \"${config.schedule}\" \\\\
+            --timeout ${config.timeout} \\\\
+            --enabled ${config.enabled} \\\\
+            --logging ${config.logging} \\\\
+            --projectId ${this.projectId} \\\\
+            --parseOutput`;
+          
+          const result = JSON.parse(execSync(createCmd, { encoding: 'utf8' }));
+          functionId = result.$id;
+          console.log(`   Created function: ${functionId}`);
+        }
+      } catch (error) {
+        console.error('   Error checking/creating function:', error.message);
+        throw error;
       }
       
-      execCommand(`appwrite functions createVariable --functionId="${func.id}" --key="${key}" --value="${value}"`);
+      // Update environment variables from .env file
+      console.log('   Updating environment variables...');
+      const envVars = {
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+        MUREKA_API_KEY: process.env.MUREKA_API_KEY,
+        DATABASE_ID: 'mitchly-music-db',
+        BANDS_COLLECTION: 'bands',
+        SONGS_COLLECTION: 'songs',
+        RATE_LIMIT_COOLDOWN: '20000',
+        INITIAL_DELAY: '30000',
+        API_CALL_DELAY: '500'
+      };
+      
+      // Only add vars that this function needs
+      const functionVars = {};
+      if (name.includes('lyrics')) {
+        functionVars.ANTHROPIC_API_KEY = envVars.ANTHROPIC_API_KEY;
+      }
+      if (name.includes('audio')) {
+        functionVars.MUREKA_API_KEY = envVars.MUREKA_API_KEY;
+      }
+      
+      // Add common vars
+      Object.assign(functionVars, {
+        DATABASE_ID: envVars.DATABASE_ID,
+        BANDS_COLLECTION: envVars.BANDS_COLLECTION,
+        SONGS_COLLECTION: envVars.SONGS_COLLECTION
+      });
+      
+      if (name.includes('poll')) {
+        Object.assign(functionVars, {
+          RATE_LIMIT_COOLDOWN: envVars.RATE_LIMIT_COOLDOWN,
+          INITIAL_DELAY: envVars.INITIAL_DELAY,
+          API_CALL_DELAY: envVars.API_CALL_DELAY
+        });
+      }
+      
+      for (const [key, value] of Object.entries(functionVars)) {
+        if (!value) {
+          console.log(`   Skipping ${key} - no value provided`);
+          continue;
+        }
+        
+        try {
+          // Try to create the variable
+          const createVarCmd = `appwrite functions create-variable \\\\
+            --functionId ${functionId} \\\\
+            --key \"${key}\" \\\\
+            --value \"${value}\" \\\\
+            --projectId ${this.projectId}`;
+          
+          execSync(createVarCmd, { stdio: 'pipe' });
+          console.log(`   Created variable: ${key}`);
+        } catch (error) {
+          // If it exists, update it
+          try {
+            const updateVarCmd = `appwrite functions update-variable \\\\
+              --functionId ${functionId} \\\\
+              --key \"${key}\" \\\\
+              --value \"${value}\" \\\\
+              --projectId ${this.projectId}`;
+            
+            execSync(updateVarCmd, { stdio: 'pipe' });
+            console.log(`   Updated variable: ${key}`);
+          } catch (updateError) {
+            console.log(`   Failed to create/update variable ${key}: ${updateError.message}`);
+          }
+        }
+      }
+      
+      // Deploy the code
+      console.log('   Deploying code...');
+      const deployCmd = `appwrite functions create-deployment \\\\
+        --functionId ${functionId} \\\\
+        --entrypoint \"${config.entrypoint}\" \\\\
+        --commands \"${config.commands}\" \\\\
+        --code \"${path}\" \\\\
+        --activate true \\\\
+        --projectId ${this.projectId} \\\\
+        --parseOutput`;
+      
+      const deployment = JSON.parse(execSync(deployCmd, { encoding: 'utf8' }));
+      console.log(`   ✅ Deployment created: ${deployment.$id}`);
+      
+      // Wait for deployment to be ready
+      console.log('   Waiting for deployment to be ready...');
+      await this.waitForDeployment(functionId, deployment.$id);
+      
+      return {
+        functionId,
+        deploymentId: deployment.$id,
+        success: true
+      };
+      
+    } catch (error) {
+      console.error(`   ❌ Error deploying ${name}:`, error.message);
+      return {
+        functionId: null,
+        deploymentId: null,
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Wait for deployment to be ready
+   */
+  async waitForDeployment(functionId, deploymentId, maxAttempts = 30) {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const cmd = `appwrite functions get-deployment \\\\
+          --functionId ${functionId} \\\\
+          --deploymentId ${deploymentId} \\\\
+          --projectId ${this.projectId} \\\\
+          --parseOutput`;
+        
+        const deployment = JSON.parse(execSync(cmd, { encoding: 'utf8' }));
+        
+        if (deployment.status === 'ready') {
+          console.log('   ✅ Deployment is ready!');
+          return true;
+        } else if (deployment.status === 'failed') {
+          throw new Error(`Deployment failed: ${deployment.stderr}`);
+        }
+        
+        console.log(`   Status: ${deployment.status}... (attempt ${i + 1}/${maxAttempts})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error('   Error checking deployment status:', error.message);
+      }
     }
     
-    // Deploy code
-    log(`Deploying code...`, 'yellow');
-    process.chdir(functionPath);
-    
-    // Install dependencies
-    execCommand('npm install');
-    
-    // Create deployment
-    execCommand(`appwrite functions createDeployment --functionId="${func.id}" --entrypoint="${func.entrypoint}" --code="." --activate`);
-    
-    log(`✅ ${func.name} deployed successfully!`, 'green');
-    
-  } catch (error) {
-    log(`❌ Failed to deploy ${func.name}: ${error.message}`, 'red');
-    return false;
+    throw new Error('Deployment timeout');
   }
   
-  return true;
+  /**
+   * Deploy all functions
+   */
+  async deployAll(functionDirs) {
+    console.log('🚀 Starting Appwrite Functions Deployment');
+    console.log(`   Project ID: ${this.projectId}`);
+    console.log(`   Endpoint: ${`
 }
-
-async function main() {
-  log('🚀 Appwrite Functions Deployment Script', 'bright');
-  log('=====================================\n', 'bright');
-  
-  // Check if Appwrite CLI is logged in
-  try {
-    execCommand('appwrite account get', true);
-  } catch {
-    log('Please login to Appwrite CLI first:', 'red');
-    log('appwrite login', 'yellow');
-    process.exit(1);
-  }
-  
-  // Check for required environment variables
-  const requiredEnvVars = ['APPWRITE_API_KEY', 'ANTHROPIC_API_KEY', 'FAL_API_KEY', 'MUREKA_API_KEY'];
-  const missingVars = requiredEnvVars.filter(v => !process.env[v]);
-  
-  if (missingVars.length > 0) {
-    log('Missing required environment variables:', 'red');
-    missingVars.forEach(v => log(`  - ${v}`, 'yellow'));
-    log('\nPlease set them in your .env file or export them:', 'yellow');
-    missingVars.forEach(v => log(`  export ${v}="your-key-here"`, 'yellow'));
-    process.exit(1);
-  }
-  
-  // Deploy all functions
-  let successCount = 0;
-  for (const func of functions) {
-    if (await deployFunction(func)) {
-      successCount++;
-    }
-  }
-  
-  log(`\n✅ Deployment complete! ${successCount}/${functions.length} functions deployed.`, 'green');
-  
-  if (successCount < functions.length) {
-    log('Some functions failed to deploy. Please check the errors above.', 'yellow');
-  }
-  
-  // Return to original directory
-  process.chdir(__dirname);
-}
-
-// Run the deployment
-main().catch(error => {
-  log(`Deployment failed: ${error.message}`, 'red');
-  process.exit(1);
-});

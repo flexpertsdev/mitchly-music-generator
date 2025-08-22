@@ -5,9 +5,12 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "setup": "echo 'No setup required for audio generation'"
+    "test": "node ../test/test-function.js audio"
   },
   "dependencies": {
     "node-appwrite": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,18 +1,23 @@
 {
-  "poll-audio-status": {
-    "name": "Poll Audio Status",
-    "runtime": "node-20.0",
-    "entrypoint": "src/index.js",
-    "commands": "npm install",
-    "events": [],
-    "schedule": "*/2 * * * *",
-    "timeout": 60,
-    "enabled": true,
-    "logging": true,
-    "execute": [],
-    "scopes": [
-      "databases.read",
-      "databases.write"
-    ]
+  "$id": "poll-audio-status",
+  "name": "Poll Audio Status",
+  "runtime": "node-20.0",
+  "entrypoint": "src/index.js",
+  "commands": "npm install",
+  "events": [],
+  "schedule": "*/2 * * * *",
+  "timeout": 60,
+  "enabled": true,
+  "logging": true,
+  "execute": ["any"],
+  "scopes": [
+    "databases.read",
+    "databases.write"
+  ],
+  "variables": {
+    "MUREKA_API_KEY": "",
+    "RATE_LIMIT_COOLDOWN": "20000",
+    "INITIAL_DELAY": "30000",
+    "API_CALL_DELAY": "500"
   }
 }

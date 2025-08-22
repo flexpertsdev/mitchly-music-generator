@@ -1,4 +1,14 @@
 export const validateSongEvent = (event) => {
+  if (!event) {
+    throw new Error('No event data provided');
+  }
+  
+  // For direct HTTP calls
+  if (event.songId) {
+    return { isDirectCall: true, songId: event.songId };
+  }
+  
+  // For database trigger events
   if (!event.$id) {
     throw new Error('Event missing $id');
   }
@@ -11,12 +21,11 @@ export const validateSongEvent = (event) => {
     throw new Error('Song status is not "generating"');
   }
   
-  return true;
+  return { isDirectCall: false, songId: event.$id };
 };
 
 export const validateEnvironment = () => {
   const required = [
-    'APPWRITE_FUNCTION_API_ENDPOINT',
     'APPWRITE_FUNCTION_PROJECT_ID',
     'ANTHROPIC_API_KEY'
   ];
@@ -26,4 +35,16 @@ export const validateEnvironment = () => {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+};
+
+export const parseRequestBody = (body) => {
+  // Handle different body formats
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body);
+    } catch (e) {
+      throw new Error('Invalid JSON in request body');
+    }
+  }
+  return body || {};
 };

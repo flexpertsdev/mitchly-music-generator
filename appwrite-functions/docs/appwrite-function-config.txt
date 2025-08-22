@@ -1,0 +1,76 @@
+// appwrite.json - Place this in each function directory
+{
+  "generate-lyrics": {
+    "name": "Generate Lyrics",
+    "runtime": "node-20.0",
+    "entrypoint": "src/index.js",
+    "commands": "npm install && npm run setup",
+    "events": [
+      "databases.mitchly-music-db.collections.songs.documents.*.update"
+    ],
+    "schedule": "",
+    "timeout": 30,
+    "enabled": true,
+    "logging": true,
+    "execute": [],
+    "scopes": [
+      "databases.read",
+      "databases.write"
+    ],
+    "variables": {
+      "ANTHROPIC_API_KEY": "<your-anthropic-key>",
+      "DATABASE_ID": "mitchly-music-db",
+      "BANDS_COLLECTION": "bands",
+      "SONGS_COLLECTION": "songs"
+    }
+  },
+  
+  "generate-audio": {
+    "name": "Generate Audio",
+    "runtime": "node-20.0",
+    "entrypoint": "src/index.js",
+    "commands": "npm install && npm run setup",
+    "events": [
+      "databases.mitchly-music-db.collections.songs.documents.*.update"
+    ],
+    "schedule": "",
+    "timeout": 15,
+    "enabled": true,
+    "logging": true,
+    "execute": [],
+    "scopes": [
+      "databases.read",
+      "databases.write"
+    ],
+    "variables": {
+      "MUREKA_API_KEY": "<your-mureka-key>",
+      "DATABASE_ID": "mitchly-music-db",
+      "SONGS_COLLECTION": "songs"
+    }
+  },
+  
+  "poll-audio-status": {
+    "name": "Poll Audio Status",
+    "runtime": "node-20.0",
+    "entrypoint": "src/index.js",
+    "commands": "npm install",
+    "events": [],
+    "schedule": "*/2 * * * *",
+    "timeout": 60,
+    "enabled": true,
+    "logging": true,
+    "execute": [],
+    "scopes": [
+      "databases.read",
+      "databases.write"
+    ],
+    "variables": {
+      "MUREKA_API_KEY": "<your-mureka-key>",
+      "DATABASE_ID": "mitchly-music-db",
+      "SONGS_COLLECTION": "songs",
+      "RATE_LIMIT_COOLDOWN": "20000",
+      "INITIAL_DELAY": "30000",
+      "API_CALL_DELAY": "500"
+    }
+  }
+}

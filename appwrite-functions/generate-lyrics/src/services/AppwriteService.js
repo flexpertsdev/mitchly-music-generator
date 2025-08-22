@@ -17,7 +17,7 @@ export class AppwriteService {
     try {
       const band = await this.databases.getDocument(
         DATABASE_CONFIG.DATABASE_ID,
-        'bands',
+        DATABASE_CONFIG.COLLECTIONS.bands.id,
         bandId
       );
       
@@ -30,14 +30,32 @@ export class AppwriteService {
       
       return band;
     } catch (error) {
+      if (error.code === 404) {
+        return null;
+      }
       throw new Error(`Failed to fetch band: ${error.message}`);
+    }
+  }
+  
+  async getSong(songId) {
+    try {
+      return await this.databases.getDocument(
+        DATABASE_CONFIG.DATABASE_ID,
+        DATABASE_CONFIG.COLLECTIONS.songs.id,
+        songId
+      );
+    } catch (error) {
+      if (error.code === 404) {
+        throw new Error('Song not found');
+      }
+      throw error;
     }
   }
   
   async updateSongWithLyrics(songId, lyrics, description) {
     return await this.databases.updateDocument(
       DATABASE_CONFIG.DATABASE_ID,
-      'songs',
+      DATABASE_CONFIG.COLLECTIONS.songs.id,
       songId,
       {
         lyrics: lyrics,
@@ -57,7 +75,7 @@ export class AppwriteService {
     
     return await this.databases.updateDocument(
       DATABASE_CONFIG.DATABASE_ID,
-      'songs',
+      DATABASE_CONFIG.COLLECTIONS.songs.id,
       songId,
       updateData
     );

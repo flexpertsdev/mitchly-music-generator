@@ -5,10 +5,14 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "setup": "node src/setup.js"
+    "setup": "node src/setup.js",
+    "test": "node ../test/test-function.js lyrics"
   },
   "dependencies": {
     "node-appwrite": "^14.0.0",
     "@anthropic-ai/sdk": "^0.24.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

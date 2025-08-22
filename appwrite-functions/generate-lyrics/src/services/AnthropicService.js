@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { FUNCTION_CONFIG } from '../config.js';
 
 export class AnthropicService {
   constructor(apiKey) {
@@ -19,21 +20,28 @@ export class AnthropicService {
     
     const prompt = this.buildPrompt(bandProfile, songDetails);
     
-    const response = await this.client.messages.create({
-      model: 'claude-3-opus-20240229',
-      max_tokens: 4000,
-      temperature: 0.8,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
-    
-    const content = response.content[0].text;
-    
-    // Clean and parse response
-    const cleanContent = this.cleanJsonResponse(content);
-    return JSON.parse(cleanContent);
+    try {
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
+        temperature: 0.8,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+      
+      const content = response.content[0].text;
+      
+      // Clean and parse response
+      const cleanContent = this.cleanJsonResponse(content);
+      return JSON.parse(cleanContent);
+    } catch (error) {
+      if (error.message?.includes('rate limit')) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      throw error;
+    }
   }
   
   buildPrompt(bandProfile, songDetails) {

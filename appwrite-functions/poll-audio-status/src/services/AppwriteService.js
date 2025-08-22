@@ -1,5 +1,5 @@
 import { Client, Databases, Query } from 'node-appwrite';
-import { DATABASE_CONFIG, POLLING_CONFIG } from '../config.js';
+import { DATABASE_CONFIG, POLLING_CONFIG, MUREKA_CONFIG } from '../config.js';
 
 export class AppwriteService {
   constructor(endpoint, projectId, apiKey) {
@@ -11,21 +11,38 @@ export class AppwriteService {
     this.databases = new Databases(this.client);
   }
   
-  async getProcessingSongs() {
-    const cutoffTime = new Date(Date.now() - POLLING_CONFIG.RATE_LIMIT_COOLDOWN).toISOString();
-    const initialDelayCutoff = new Date(Date.now() - POLLING_CONFIG.INITIAL_DELAY).toISOString();
-    
+  /**
+   * Get all songs that are currently processing
+   * @param {boolean} forceCheck - If true, ignore rate limiting
+   */
+  async getProcessingSongs(forceCheck = false) {
     const queries = [
       Query.equal('audioStatus', 'processing'),
       Query.isNotNull('murekaTaskId'),
-      Query.lessThan('audioGenerationStartedAt', initialDelayCutoff),
       Query.limit(POLLING_CONFIG.MAX_SONGS_PER_RUN)
     ];
+    
+    // Add time-based filters only for scheduled runs
+    if (!forceCheck) {
+      const initialDelayCutoff = new Date(Date.now() - POLLING_CONFIG.INITIAL_DELAY).toISOString();
+      queries.push(Query.lessThan('audioGenerationStartedAt', initialDelayCutoff));
+    }
     
     return await this.databases.listDocuments(
       DATABASE_CONFIG.DATABASE_ID,
       DATABASE_CONFIG.SONGS_COLLECTION,
       queries
+    );
+  }
+  
+  /**
+   * Get a specific song by ID
+   */
+  async getSong(songId) {
+    return await this.databases.getDocument(
+      DATABASE_CONFIG.DATABASE_ID,
+      DATABASE_CONFIG.SONGS_COLLECTION,
+      songId
     );
   }
   
@@ -63,7 +80,8 @@ export class AppwriteService {
       songId,
       {
         audioStatus: 'failed',
-        audioError: error
+        audioError: error,
+        audioCompletedAt: new Date().toISOString()
       }
     );
   }
