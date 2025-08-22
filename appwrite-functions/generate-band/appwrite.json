@@ -6,7 +6,7 @@
       "$id": "generate-band",
       "name": "Generate Band",
       "runtime": "node-18.0",
-      "entrypoint": "src/index.js",
+      "entrypoint": "src/main.js",
       "commands": "npm install",
       "events": [
         "databases.mitchly-music-db.collections.bands.documents.*.create",
