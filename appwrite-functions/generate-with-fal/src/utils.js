@@ -1,9 +1,6 @@
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import fs from 'fs';
 
 /**
  * Throws an error if any of the keys are missing from the object
@@ -23,29 +20,13 @@ export function throwIfMissing(obj, keys) {
   }
 }
 
-/**
- * Generate visual prompts from band profile
- * @param {object} bandProfile
- * @returns {object}
- */
-export function generateVisualPrompts(bandProfile) {
-  const logoPrompt = `Band logo for "${bandProfile.bandName}": ${bandProfile.visualIdentity.logo}. Style: ${bandProfile.visualIdentity.aesthetic}. Colors: ${bandProfile.visualIdentity.colors}. Clean, iconic, suitable for merchandise.`;
-  
-  const albumCoverPrompt = `Album cover for "${bandProfile.albumConcept.title}" by ${bandProfile.bandName}: ${bandProfile.albumConcept.description}. Visual style: ${bandProfile.visualIdentity.aesthetic}. ${bandProfile.primaryGenre} aesthetic.`;
-  
-  const bandPhotoPrompt = `Professional band photo of ${bandProfile.bandName}: ${bandProfile.backstory}. ${bandProfile.visualIdentity.style} aesthetic. ${bandProfile.vocalStyle.description}.`;
-  
-  return {
-    logo: logoPrompt,
-    albumCover: albumCoverPrompt,
-    bandPhoto: bandPhotoPrompt
-  };
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Returns the contents of a file in the static folder
  * @param {string} fileName
- * @returns {string}
+ * @returns {string} Contents of static/{fileName}
  */
 export function getStaticFile(fileName) {
   // Try multiple possible paths for Appwrite environment
