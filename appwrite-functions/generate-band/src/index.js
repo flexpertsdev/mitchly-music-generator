@@ -20,25 +20,16 @@ const SONGS_COLLECTION = 'songs';
 
 export default async ({ req, res, log, error }) => {
   try {
-    log('Function triggered with body:', JSON.stringify(req.body));
-    log('Environment variables present:', {
-      hasAppwriteKey: !!req.variables.APPWRITE_API_KEY,
-      hasAnthropicKey: !!req.variables.ANTHROPIC_API_KEY,
-      hasFalKey: !!req.variables.FAL_API_KEY
-    });
-    
     // Parse the event data
     const event = req.body;
     
     // Check if this is a band creation event
     if (!event.$id || event.$collection !== BANDS_COLLECTION) {
-      log(`Not a band event. Collection: ${event.$collection}, Expected: ${BANDS_COLLECTION}`);
       return res.json({ success: false, message: 'Not a band creation event' });
     }
     
     // Check if band is in draft status
     if (event.status !== 'draft') {
-      log(`Band status is ${event.status}, not draft. Skipping.`);
       return res.json({ success: false, message: 'Band is not in draft status' });
     }
     
@@ -47,11 +38,30 @@ export default async ({ req, res, log, error }) => {
     
     log(`Processing band generation for ID: ${bandId}`);
     
-    // Initialize Appwrite client - using built-in environment variables
+    // Get environment variables - they come from different places depending on Appwrite version
+    const APPWRITE_ENDPOINT = process.env.APPWRITE_FUNCTION_ENDPOINT || req.variables?.APPWRITE_FUNCTION_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+    const APPWRITE_PROJECT = process.env.APPWRITE_FUNCTION_PROJECT_ID || req.variables?.APPWRITE_FUNCTION_PROJECT_ID || 'flexos';
+    const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || req.variables?.APPWRITE_API_KEY;
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || req.variables?.ANTHROPIC_API_KEY;
+    const FAL_API_KEY = process.env.FAL_API_KEY || req.variables?.FAL_API_KEY;
+    
+    // Check required keys
+    if (!APPWRITE_API_KEY) {
+      error('APPWRITE_API_KEY is not set');
+      return res.json({ success: false, error: 'APPWRITE_API_KEY is not configured' });
+    }
+    if (!ANTHROPIC_API_KEY) {
+      error('ANTHROPIC_API_KEY is not set');
+      return res.json({ success: false, error: 'ANTHROPIC_API_KEY is not configured' });
+    }
+    
+    log('Environment variables loaded successfully');
+    
+    // Initialize Appwrite client
     const client = new Client()
-      .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
-      .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
-      .setKey(req.variables.APPWRITE_API_KEY);
+      .setEndpoint(APPWRITE_ENDPOINT)
+      .setProject(APPWRITE_PROJECT)
+      .setKey(APPWRITE_API_KEY);
     
     const databases = new Databases(client);
     
@@ -65,7 +75,7 @@ export default async ({ req, res, log, error }) => {
     
     // Initialize Anthropic
     const anthropic = new Anthropic({ 
-      apiKey: req.variables.ANTHROPIC_API_KEY 
+      apiKey: ANTHROPIC_API_KEY 
     });
     
     // Generate band profile with Anthropic
@@ -131,7 +141,7 @@ Important requirements:
 - Include production style description
 - bandAiInstructions should guide future AI generation to maintain consistency
 - albumAiInstructions should be specific to this album's concept
-- Ensure all track names are unique and fit the band's concept`,
+- Ensure all track names are unique and fit the band's and album concept`,
       messages: [{
         role: "user",
         content: userPrompt
@@ -224,7 +234,7 @@ Important requirements:
     // Generate images using FAL.ai
     try {
       const falHeaders = {
-        'Authorization': `Key ${req.variables.FAL_API_KEY}`,
+        'Authorization': `Key ${FAL_API_KEY}`,
         'Content-Type': 'application/json'
       };
       
@@ -330,10 +340,19 @@ Important requirements:
     // Try to update band status to failed
     if (req.body?.$id) {
       try {
+        const APPWRITE_ENDPOINT = process.env.APPWRITE_FUNCTION_ENDPOINT || req.variables?.APPWRITE_FUNCTION_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+        const APPWRITE_PROJECT = process.env.APPWRITE_FUNCTION_PROJECT_ID || req.variables?.APPWRITE_FUNCTION_PROJECT_ID || 'flexos';
+        const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || req.variables?.APPWRITE_API_KEY;
+        
+        if (!APPWRITE_API_KEY) {
+          error('Cannot update band status - APPWRITE_API_KEY not available');
+          return res.json({ success: false, error: err.message });
+        }
+        
         const client = new Client()
-          .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
-          .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
-          .setKey(req.variables.APPWRITE_API_KEY);
+          .setEndpoint(APPWRITE_ENDPOINT)
+          .setProject(APPWRITE_PROJECT)
+          .setKey(APPWRITE_API_KEY);
         
         const databases = new Databases(client);
         

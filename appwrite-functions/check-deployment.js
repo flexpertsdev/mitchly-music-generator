@@ -4,7 +4,7 @@
  * Script to verify Appwrite function deployment and configuration
  */
 
-import { Client, Functions, Databases } from 'node-appwrite';
+import { Client, Functions, Databases, Query } from 'node-appwrite';
 
 const client = new Client()
   .setEndpoint('https://fra.cloud.appwrite.io/v1')
