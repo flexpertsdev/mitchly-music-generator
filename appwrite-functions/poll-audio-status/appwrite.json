@@ -1,0 +1,18 @@
+{
+  "poll-audio-status": {
+    "name": "Poll Audio Status",
+    "runtime": "node-20.0",
+    "entrypoint": "src/index.js",
+    "commands": "npm install",
+    "events": [],
+    "schedule": "*/2 * * * *",
+    "timeout": 60,
+    "enabled": true,
+    "logging": true,
+    "execute": [],
+    "scopes": [
+      "databases.read",
+      "databases.write"
+    ]
+  }
+}

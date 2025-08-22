@@ -1,0 +1,20 @@
+{
+  "generate-audio": {
+    "name": "Generate Audio",
+    "runtime": "node-20.0",
+    "entrypoint": "src/index.js",
+    "commands": "npm install",
+    "events": [
+      "databases.mitchly-music-db.collections.songs.documents.*.update"
+    ],
+    "schedule": "",
+    "timeout": 15,
+    "enabled": true,
+    "logging": true,
+    "execute": [],
+    "scopes": [
+      "databases.read",
+      "databases.write"
+    ]
+  }
+}

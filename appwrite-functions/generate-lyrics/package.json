@@ -2,8 +2,11 @@
   "name": "generate-lyrics",
   "version": "1.0.0",
   "description": "Generate song lyrics using Anthropic AI",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
+  "scripts": {
+    "setup": "node src/setup.js"
+  },
   "dependencies": {
     "node-appwrite": "^14.0.0",
     "@anthropic-ai/sdk": "^0.24.3"

@@ -4,7 +4,10 @@
   "description": "Poll Mureka API for audio generation status",
   "main": "src/index.js",
   "type": "module",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
   "dependencies": {
-    "node-appwrite": "^15.0.0"
+    "node-appwrite": "^14.0.0"
   }
 }

@@ -3,49 +3,37 @@
  * Triggered when a song document is updated with audioStatus 'generating'
  * 
  * This function:
- * 1. Sends song data to Mureka API for audio generation
- * 2. Stores the task ID for polling
- * 3. Updates song with task information
+ * 1. Validates the event and environment
+ * 2. Sends song data to Mureka API for audio generation
+ * 3. Stores the task ID for polling
+ * 4. Updates song with task information
  */
-import { Client, Databases } from 'node-appwrite';
-
-// Constants
-const DATABASE_ID = 'mitchly-music-db';
-const SONGS_COLLECTION = 'songs';
-const MUREKA_API_URL = 'https://api.mureka.ai/v2/music/generate';
+import { MurekaService } from './services/MurekaService.js';
+import { AppwriteService } from './services/AppwriteService.js';
+import { validateAudioEvent, validateEnvironment } from './utils/validation.js';
 
 export default async ({ req, res, log, error }) => {
   try {
-    // Parse the event data
+    // Validate environment
+    validateEnvironment();
+    
+    // Parse and validate event
     const event = req.body;
-    
-    // Check if this is a song update event
-    if (!event.$id || event.$collection !== SONGS_COLLECTION) {
-      return res.json({ success: false, message: 'Not a song update event' });
-    }
-    
-    // Only process if audioStatus changed to 'generating'
-    if (event.audioStatus !== 'generating') {
-      return res.json({ success: false, message: 'Not generating audio status' });
-    }
+    validateAudioEvent(event);
     
     const songId = event.$id;
     log(`Starting audio generation for song: ${songId}`);
     
-    // Validate required fields
-    if (!event.lyrics) {
-      throw new Error('Song must have lyrics before generating audio');
-    }
+    // Initialize services
+    const appwrite = new AppwriteService(
+      process.env.APPWRITE_FUNCTION_API_ENDPOINT,
+      process.env.APPWRITE_FUNCTION_PROJECT_ID,
+      req.headers['x-appwrite-key']
+    );
     
-    // Initialize Appwrite client
-    const client = new Client()
-      .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
-      .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
-      .setKey(req.variables.APPWRITE_API_KEY);
+    const mureka = new MurekaService(process.env.MUREKA_API_KEY);
     
-    const databases = new Databases(client);
-    
-    // Prepare Mureka API request
+    // Prepare Mureka payload
     const murekaPayload = {
       title: event.title || 'Untitled',
       lyrics: event.lyrics,
@@ -60,34 +48,15 @@ export default async ({ req, res, log, error }) => {
     
     log('Calling Mureka API...');
     
-    // Call Mureka API
-    const murekaResponse = await fetch(MUREKA_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${req.variables.MUREKA_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(murekaPayload)
-    });
-    
-    if (!murekaResponse.ok) {
-      const errorText = await murekaResponse.text();
-      throw new Error(`Mureka API error: ${murekaResponse.status} - ${errorText}`);
-    }
-    
-    const murekaData = await murekaResponse.json();
+    // Generate music
+    const murekaData = await mureka.generateMusic(murekaPayload);
     log(`Mureka task created: ${murekaData.task_id}`);
     
     // Update song with task information
-    await databases.updateDocument(
-      DATABASE_ID,
-      SONGS_COLLECTION,
+    await appwrite.updateSongAudioStatus(
       songId,
-      {
-        audioStatus: 'processing',
-        murekaTaskId: murekaData.task_id,
-        audioGenerationStartedAt: new Date().toISOString()
-      }
+      'processing',
+      murekaData.task_id
     );
     
     log('Song updated with Mureka task ID');
@@ -100,29 +69,25 @@ export default async ({ req, res, log, error }) => {
     });
     
   } catch (err) {
-    error('Error generating audio:', err.message);
+    error(`Error generating audio: ${err.message}`);
     
-    // Try to update the document with error status
+    // Try to update song status to failed
     if (req.body?.$id) {
       try {
-        const client = new Client()
-          .setEndpoint(req.variables.APPWRITE_FUNCTION_ENDPOINT)
-          .setProject(req.variables.APPWRITE_FUNCTION_PROJECT_ID)
-          .setKey(req.variables.APPWRITE_API_KEY);
+        const appwrite = new AppwriteService(
+          process.env.APPWRITE_FUNCTION_API_ENDPOINT,
+          process.env.APPWRITE_FUNCTION_PROJECT_ID,
+          req.headers['x-appwrite-key']
+        );
         
-        const databases = new Databases(client);
-        
-        await databases.updateDocument(
-          DATABASE_ID,
-          SONGS_COLLECTION,
+        await appwrite.updateSongAudioStatus(
           req.body.$id,
-          {
-            audioStatus: 'failed',
-            audioError: err.message || 'Unknown error'
-          }
+          'failed',
+          null,
+          err.message
         );
       } catch (updateErr) {
-        error('Failed to update error status:', updateErr.message);
+        error(`Failed to update error status: ${updateErr.message}`);
       }
     }
     

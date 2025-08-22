@@ -1,10 +1,13 @@
 {
   "name": "generate-audio",
   "version": "1.0.0",
-  "description": "Initiate audio generation with Mureka API",
+  "description": "Generate audio using Mureka AI",
   "main": "src/index.js",
   "type": "module",
+  "scripts": {
+    "setup": "echo 'No setup required for audio generation'"
+  },
   "dependencies": {
-    "node-appwrite": "^15.0.0"
+    "node-appwrite": "^14.0.0"
   }
 }
