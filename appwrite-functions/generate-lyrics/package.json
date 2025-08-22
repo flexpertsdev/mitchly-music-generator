@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "node-appwrite": "^14.0.0",
-    "@anthropic-ai/sdk": "^0.24.3"
+    "@anthropic-ai/sdk": "latest"
   },
   "engines": {
     "node": ">=18.0.0"
