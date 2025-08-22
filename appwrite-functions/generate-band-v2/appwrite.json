@@ -1,0 +1,23 @@
+{
+  "projectId": "flexos",
+  "projectName": "FlexOS",
+  "functions": [
+    {
+      "$id": "generate-band-v2",
+      "name": "Generate Band V2",
+      "runtime": "node-18.0",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "events": [],
+      "schedule": "",
+      "timeout": 300,
+      "enabled": true,
+      "logging": true,
+      "execute": ["any"],
+      "vars": {
+        "APPWRITE_FUNCTION_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+        "APPWRITE_FUNCTION_PROJECT_ID": "flexos"
+      }
+    }
+  ]
+}
