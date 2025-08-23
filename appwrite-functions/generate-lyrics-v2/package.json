@@ -1,0 +1,17 @@
+{
+  "name": "generate-lyrics-v2",
+  "version": "1.0.0",
+  "description": "Generate Lyrics Function V2 - Supports both POST requests and database events",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "test": "node src/test.js"
+  },
+  "dependencies": {
+    "node-appwrite": "^14.1.0",
+    "@anthropic-ai/sdk": "latest"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
+  }
+}

@@ -1,7 +1,13 @@
+import * as fal from '@fal-ai/serverless-client';
+
 class FalService {
   constructor() {
     this.apiKey = process.env.FAL_API_KEY;
-    this.baseUrl = 'https://fal.run/fal-ai/flux/schnell';
+    if (this.apiKey) {
+      fal.config({
+        credentials: this.apiKey
+      });
+    }
   }
 
   /**
@@ -24,21 +30,15 @@ class FalService {
     }
 
     try {
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Key ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const result = await fal.subscribe('fal-ai/flux/schnell', {
+        input: {
           prompt,
           image_size: imageSize,
           num_images: 1
-        })
+        }
       });
-
-      const data = await response.json();
-      return data?.images?.[0]?.url || null;
+      
+      return result?.images?.[0]?.url || null;
     } catch (error) {
       console.error(`FAL.ai generation error: ${error.message}`);
       return null;

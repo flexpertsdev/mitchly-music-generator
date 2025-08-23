@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Spotify DNA - Test Interface</title>
+  <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink@0" />
+  <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink-icons@0" />
+  <script src="//unpkg.com/alpinejs" defer></script>
+</head>
+<body class="theme-dark">
+  <main class="main-content">
+    <div class="top-cover u-padding-block-end-56">
+      <div class="container">
+        <h1 class="heading-level-1 u-margin-block-start-16">🎵 Get Spotify DNA</h1>
+        <p class="body-text-1 u-normal u-margin-block-start-8" style="max-width: 50rem">
+          Analyze your Spotify listening history to create a musical DNA profile and generate 
+          personalized band concepts that would become your new favorite bands.
+        </p>
+      </div>
+    </div>
+    
+    <div x-data="spotifyDNA()" class="container u-margin-block-start-negative-56">
+      <div class="card u-flex u-gap-24 u-flex-vertical">
+        <!-- Input Section -->
+        <div>
+          <h2 class="heading-level-4">Analyze Spotify Data</h2>
+          <p class="text u-margin-block-start-8">
+            Enter your Spotify access token or user ID to analyze listening history and generate personalized band concepts.
+          </p>
+          
+          <div class="u-margin-block-start-16">
+            <label class="label">Spotify Access Token</label>
+            <input 
+              x-model="spotifyToken"
+              type="text"
+              class="input-text"
+              placeholder="Your Spotify access token (starts with BQ...)"
+              :disabled="isProcessing"
+            />
+            <p class="text u-margin-block-start-4" style="font-size: 0.875rem; opacity: 0.7;">
+              Get your token from 
+              <a href="https://developer.spotify.com/console/get-current-user/" target="_blank">Spotify Console</a>
+            </p>
+          </div>
+          
+          <div class="u-margin-block-start-16">
+            <label class="label">OR User ID (if stored in Appwrite)</label>
+            <input 
+              x-model="userId"
+              type="text"
+              class="input-text"
+              placeholder="Appwrite user ID (optional)"
+              :disabled="isProcessing"
+            />
+          </div>
+          
+          <div class="u-margin-block-start-16">
+            <label class="checkbox">
+              <input type="checkbox" x-model="forceUpdate" :disabled="isProcessing" />
+              <span class="text">Force update (bypass 24-hour cache)</span>
+            </label>
+          </div>
+          
+          <button 
+            @click="analyzeDNA()"
+            class="button u-margin-block-start-16"
+            :disabled="(!spotifyToken && !userId) || isProcessing"
+          >
+            <span class="text" x-text="isProcessing ? 'Analyzing...' : 'Analyze My Spotify DNA'"></span>
+          </button>
+          
+          <!-- Error Display -->
+          <template x-if="error">
+            <div class="alert is-danger u-margin-block-start-16">
+              <div class="alert-grid">
+                <span class="icon-x-circle" aria-hidden="true"></span>
+                <div class="alert-content">
+                  <h6 class="alert-title">Error</h6>
+                  <p class="alert-message" x-text="error"></p>
+                </div>
+              </div>
+            </div>
+          </template>
+          
+          <!-- Success Display -->
+          <template x-if="result">
+            <div class="u-margin-block-start-24">
+              <h3 class="heading-level-5">🧬 Your Musical DNA</h3>
+              
+              <!-- Profile Info -->
+              <template x-if="result.profile">
+                <div class="card u-margin-block-start-8" style="background: #1a1a1a;">
+                  <p class="text">
+                    <strong>Spotify User:</strong> 
+                    <span x-text="result.profile.displayName || 'Anonymous'"></span>
+                    <span x-show="result.profile.product" class="badge" x-text="result.profile.product"></span>
+                  </p>
+                </div>
+              </template>
+              
+              <!-- Musical DNA Summary -->
+              <template x-if="result.musicalDNA">
+                <div class="u-margin-block-start-16">
+                  <h4 class="heading-level-6">Your Music Profile</h4>
+                  <div class="card u-margin-block-start-8" style="background: #1a1a1a;">
+                    <div class="u-flex u-gap-16 u-flex-wrap">
+                      <div>
+                        <p class="text u-bold">Top Genres:</p>
+                        <template x-for="genre in result.musicalDNA.primaryGenres.slice(0, 3)">
+                          <span class="tag u-margin-inline-start-4" x-text="`${genre.genre} (${genre.percentage}%)`"></span>
+                        </template>
+                      </div>
+                      <div>
+                        <p class="text u-bold">Energy Level:</p>
+                        <p class="text" x-text="result.musicalDNA.aiSummary.energyProfile"></p>
+                      </div>
+                      <div>
+                        <p class="text u-bold">Mood:</p>
+                        <p class="text" x-text="result.musicalDNA.aiSummary.emotionalTone"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              
+              <!-- Band Concepts -->
+              <template x-if="result.bandConcepts && result.bandConcepts.length > 0">
+                <div class="u-margin-block-start-24">
+                  <h4 class="heading-level-5">🎸 Your Personalized Band Concepts</h4>
+                  <template x-for="(concept, index) in result.bandConcepts">
+                    <div class="card u-margin-block-start-16" style="background: #1a1a1a;">
+                      <h5 class="heading-level-6" x-text="`${index + 1}. ${concept.name}`"></h5>
+                      <p class="text u-margin-block-start-4">
+                        <span class="badge" x-text="concept.genre"></span>
+                      </p>
+                      <p class="text u-margin-block-start-8" x-text="concept.description"></p>
+                      <p class="text u-margin-block-start-4" style="font-style: italic;" x-text="`"${concept.vibe}"`"></p>
+                      <p class="text u-margin-block-start-8">
+                        <strong>Album:</strong> <span x-text="concept.albumTitle"></span>
+                      </p>
+                      <p class="text u-margin-block-start-4">
+                        <strong>What makes them unique:</strong> <span x-text="concept.uniqueElement"></span>
+                      </p>
+                      <template x-if="concept.images && concept.images.albumCover">
+                        <img :src="concept.images.albumCover.url" alt="Album Cover" class="u-margin-block-start-8" style="max-width: 200px;">
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
+              
+              <!-- Raw Data -->
+              <details class="u-margin-block-start-24">
+                <summary class="heading-level-6" style="cursor: pointer;">View Raw Response</summary>
+                <div class="card u-margin-block-start-8" style="background: #1a1a1a;">
+                  <pre class="u-text-wrap" style="color: #e0e0e0; font-size: 0.75rem; max-height: 400px; overflow-y: auto;"><code x-text="JSON.stringify(result, null, 2)"></code></pre>
+                </div>
+              </details>
+            </div>
+          </template>
+        </div>
+        
+        <div class="u-sep-block"></div>
+        
+        <!-- API Documentation -->
+        <div>
+          <h3 class="heading-level-5">API Usage</h3>
+          <p class="text u-margin-block-start-8">
+            Send a POST request to analyze Spotify listening data:
+          </p>
+          <div class="code-block u-margin-block-start-8">
+            <pre>{
+  "spotifyToken": "your-spotify-access-token",
+  // OR
+  "userId": "appwrite-user-id",
+  "forceUpdate": false // Optional: bypass cache
+}</pre>
+          </div>
+          
+          <h4 class="heading-level-6 u-margin-block-start-16">Response</h4>
+          <div class="code-block u-margin-block-start-8">
+            <pre>{
+  "success": true,
+  "musicalDNA": {
+    "primaryGenres": [...],
+    "audioProfile": {...},
+    "aiSummary": {...}
+  },
+  "bandConcepts": [
+    {
+      "name": "Band Name",
+      "genre": "Genre description",
+      "description": "Band description",
+      ...
+    }
+  ]
+}</pre>
+          </div>
+          
+          <h4 class="heading-level-6 u-margin-block-start-16">Required Permissions</h4>
+          <ul class="list u-margin-block-start-8">
+            <li>Spotify: user-top-read, user-read-recently-played</li>
+            <li>Appwrite: databases.write, users.read (if using userId)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@12.0.0"></script>
+  <script>
+    function spotifyDNA() {
+      return {
+        spotifyToken: '',
+        userId: '',
+        forceUpdate: false,
+        isProcessing: false,
+        result: null,
+        error: null,
+        
+        async analyzeDNA() {
+          this.isProcessing = true;
+          this.error = null;
+          this.result = null;
+          
+          try {
+            const requestBody = {};
+            
+            if (this.spotifyToken) {
+              requestBody.spotifyToken = this.spotifyToken;
+            }
+            if (this.userId) {
+              requestBody.userId = this.userId;
+            }
+            if (this.forceUpdate) {
+              requestBody.forceUpdate = true;
+            }
+            
+            const response = await fetch('/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || 'Analysis failed');
+            }
+            
+            this.result = data;
+            console.log('Analysis complete:', data);
+          } catch (err) {
+            this.error = err.message;
+            console.error('Analysis error:', err);
+          } finally {
+            this.isProcessing = false;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Audio Status V2 - Test Interface</title>
+  <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink@0" />
+  <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink-icons@0" />
+  <script src="//unpkg.com/alpinejs" defer></script>
+</head>
+<body class="theme-dark">
+  <main class="main-content">
+    <div class="top-cover u-padding-block-end-56">
+      <div class="container">
+        <h1 class="heading-level-1 u-margin-block-start-16">Check Audio Status Function V2</h1>
+        <p class="body-text-1 u-normal u-margin-block-start-8" style="max-width: 50rem">
+          Check the status of audio generation tasks from the Mureka API.
+        </p>
+      </div>
+    </div>
+    
+    <div x-data="statusChecker()" class="container u-margin-block-start-negative-56">
+      <div class="card u-flex u-gap-24 u-flex-vertical">
+        <div>
+          <h2 class="heading-level-4">Check Audio Status</h2>
+          <p class="text u-margin-block-start-8">
+            Enter a task ID from the audio generation process to check its current status.
+          </p>
+          
+          <div class="u-margin-block-start-16">
+            <label class="label">Task ID</label>
+            <input 
+              x-model="taskId"
+              type="text"
+              class="input-text"
+              placeholder="Enter task ID from generation"
+              :disabled="isChecking"
+            />
+          </div>
+          
+          <div class="u-margin-block-start-16">
+            <label class="label">Song ID (Optional)</label>
+            <input 
+              x-model="songId"
+              type="text"
+              class="input-text"
+              placeholder="Enter song ID to auto-update when complete"
+              :disabled="isChecking"
+            />
+          </div>
+          
+          <button 
+            @click="checkStatus()"
+            class="button u-margin-block-start-16"
+            :disabled="!taskId || isChecking"
+          >
+            <span class="text" x-text="isChecking ? 'Checking...' : 'Check Status'"></span>
+          </button>
+          
+          <template x-if="error">
+            <div class="alert is-danger u-margin-block-start-16">
+              <div class="alert-grid">
+                <span class="icon-x-circle" aria-hidden="true"></span>
+                <div class="alert-content">
+                  <h6 class="alert-title">Error</h6>
+                  <p class="alert-message" x-text="error"></p>
+                </div>
+              </div>
+            </div>
+          </template>
+          
+          <template x-if="result">
+            <div class="u-margin-block-start-24">
+              <h3 class="heading-level-5">Status Result</h3>
+              
+              <div class="u-margin-block-start-16">
+                <div class="u-flex u-gap-16 u-flex-wrap">
+                  <div>
+                    <span class="text u-bold">Status:</span>
+                    <span class="badge" :class="{
+                      'is-success': result.status === 'completed',
+                      'is-warning': result.status === 'processing',
+                      'is-danger': result.status === 'failed'
+                    }" x-text="result.status"></span>
+                  </div>
+                  <div x-show="result.progress !== undefined">
+                    <span class="text u-bold">Progress:</span>
+                    <span class="text" x-text="`${result.progress}%`"></span>
+                  </div>
+                </div>
+              </div>
+              
+              <template x-if="result.audioUrl">
+                <div class="u-margin-block-start-16">
+                  <h4 class="heading-level-6">Generated Audio</h4>
+                  <audio controls class="u-margin-block-start-8" style="width: 100%;">
+                    <source :src="result.audioUrl" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                  </audio>
+                  <p class="text u-margin-block-start-4">
+                    <a :href="result.audioUrl" target="_blank" class="link">Download Audio</a>
+                    <span x-show="result.duration" class="text u-margin-inline-start-16">
+                      Duration: <span x-text="`${Math.floor(result.duration / 60)}:${String(result.duration % 60).padStart(2, '0')}`"></span>
+                    </span>
+                  </p>
+                </div>
+              </template>
+              
+              <div class="u-margin-block-start-16">
+                <h4 class="heading-level-6">Full Response</h4>
+                <div class="card u-margin-block-start-8" style="background: #1a1a1a;">
+                  <pre class="u-text-wrap" style="color: #e0e0e0; font-size: 0.875rem;"><code x-text="JSON.stringify(result, null, 2)"></code></pre>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+        
+        <div class="u-sep-block"></div>
+        
+        <div>
+          <h3 class="heading-level-5">API Usage</h3>
+          <p class="text u-margin-block-start-8">
+            Send a POST request to this function with the following JSON body:
+          </p>
+          <div class="code-block u-margin-block-start-8">
+            <pre>{
+  "taskId": "mureka-task-id",
+  "songId": "optional-song-id"  // Will auto-update song when complete
+}</pre>
+          </div>
+          
+          <h4 class="heading-level-6 u-margin-block-start-16">Response</h4>
+          <div class="code-block u-margin-block-start-8">
+            <pre>{
+  "success": true,
+  "taskId": "task-id",
+  "status": "completed",
+  "progress": 100,
+  "audioUrl": "https://...",
+  "duration": 180
+}</pre>
+          </div>
+          
+          <h4 class="heading-level-6 u-margin-block-start-16">Status Values</h4>
+          <ul class="list u-margin-block-start-8">
+            <li><code class="inline-code">pending</code> - Task is queued</li>
+            <li><code class="inline-code">processing</code> - Audio is being generated</li>
+            <li><code class="inline-code">completed</code> - Audio is ready</li>
+            <li><code class="inline-code">failed</code> - Generation failed</li>
+          </ul>
+          
+          <h4 class="heading-level-6 u-margin-block-start-16">Environment Variables</h4>
+          <ul class="list u-margin-block-start-8">
+            <li>MUREKA_API_KEY - Required for checking status</li>
+            <li>APPWRITE_FUNCTION_API_KEY - Required if updating song</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script>
+    function statusChecker() {
+      return {
+        taskId: '',
+        songId: '',
+        isChecking: false,
+        result: null,
+        error: null,
+        
+        async checkStatus() {
+          this.isChecking = true;
+          this.error = null;
+          this.result = null;
+          
+          try {
+            const response = await fetch('/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId: this.taskId,
+                songId: this.songId || undefined
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || 'Status check failed');
+            }
+            
+            this.result = data;
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.isChecking = false;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

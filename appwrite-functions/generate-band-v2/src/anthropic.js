@@ -14,7 +14,7 @@ class AnthropicService {
    */
   async generateBandProfile(userPrompt) {
     const message = await this.client.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 4000,
       temperature: 0.7,
       system: this.getSystemPrompt(),

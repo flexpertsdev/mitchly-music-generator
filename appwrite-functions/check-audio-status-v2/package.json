@@ -1,0 +1,14 @@
+{
+  "name": "check-audio-status-v2",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Check audio generation status and update songs when complete",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node src/main.js"
+  },
+  "dependencies": {
+    "node-appwrite": "^14.1.0",
+    "axios": "^1.7.9"
+  }
+}
