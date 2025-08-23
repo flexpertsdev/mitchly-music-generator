@@ -17,8 +17,7 @@ const routes = [
   {
     path: '/auth',
     name: 'SpotifyAuth',
-    component: SpotifyAuth,
-    meta: { requiresGuest: true }
+    component: SpotifyAuth
   },
   {
     path: '/spotify-callback',
@@ -26,27 +25,21 @@ const routes = [
     component: SpotifyCallback
   },
   {
-    path: '/bands',
-    name: 'Bands',
-    component: () => import('../views/Bands.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/band/:id',
-    name: 'BandPage',
-    component: BandPage,
-    props: true,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/gallery',
     name: 'Gallery',
     component: Gallery
   },
   {
-    path: '/guest',
-    name: 'GuestMode',
-    component: () => import('../views/GuestMode.vue')
+    path: '/band/:id',
+    name: 'BandPage',
+    component: BandPage,
+    props: true
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 
