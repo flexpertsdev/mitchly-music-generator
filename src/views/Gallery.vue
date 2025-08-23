@@ -70,13 +70,16 @@
             <Music class="w-8 h-8 text-mitchly-blue" />
           </div>
         </div>
-        <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
+        <div 
+          @click="handleFavoritesClick"
+          class="bg-mitchly-gray rounded-lg p-6 border border-gray-800 cursor-pointer hover:border-mitchly-blue/30 transition-all"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-400">With Audio</p>
-              <p class="text-2xl font-bold text-white">{{ stats.songsWithAudio }}</p>
+              <p class="text-sm text-gray-400">My Favorites</p>
+              <p class="text-2xl font-bold text-white">{{ stats.myFavorites }}</p>
             </div>
-            <PlayCircle class="w-8 h-8 text-green-400" />
+            <Heart class="w-8 h-8 text-red-400" />
           </div>
         </div>
         <div class="bg-mitchly-gray rounded-lg p-6 border border-gray-800">
@@ -177,20 +180,15 @@
                 <Share2 class="w-4 h-4 text-gray-400" />
               </button>
               <button
-                v-if="band.isOwner"
-                @click="confirmDelete(band)"
-                class="px-3 py-2 bg-mitchly-dark hover:bg-red-900/20 rounded-lg transition-colors group/delete border border-gray-700"
-                title="Delete"
+                @click="toggleFavorite(band)"
+                class="px-3 py-2 bg-mitchly-dark hover:bg-mitchly-light-gray rounded-lg transition-colors border border-gray-700"
+                :title="favorites.has(band.$id) ? 'Remove from favorites' : 'Add to favorites'"
               >
-                <Trash2 class="w-4 h-4 text-gray-400 group-hover/delete:text-red-400" />
+                <Heart 
+                  class="w-4 h-4 transition-colors" 
+                  :class="favorites.has(band.$id) ? 'text-red-400 fill-red-400' : 'text-gray-400'"
+                />
               </button>
-              <div
-                v-else
-                class="px-3 py-2 text-gray-600 cursor-not-allowed"
-                title="Created by another user"
-              >
-                <User class="w-4 h-4" />
-              </div>
             </div>
           </div>
 
@@ -254,9 +252,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
+import { useAuthStore } from '../stores/auth';
+import { account } from '../lib/appwrite';
 import {
   Music,
   Music2,
@@ -271,10 +271,12 @@ import {
   Loader,
   AlertTriangle,
   Filter,
-  User
+  User,
+  Heart
 } from 'lucide-vue-next';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 // Get or create a user ID (simple implementation for now)
 const getUserId = () => {
@@ -298,6 +300,7 @@ const deleteModal = ref({
   show: false,
   band: null
 });
+const favorites = ref(new Set());
 
 // Computed
 const stats = computed(() => {
@@ -305,7 +308,7 @@ const stats = computed(() => {
   return {
     totalBands: bands.value.length,
     totalSongs: songs.value.length,
-    songsWithAudio: songs.value.filter(s => s.audioUrl).length,
+    myFavorites: favorites.value.size,
     uniqueGenres: [...new Set(bandList.map(b => b.primaryGenre))].length
   };
 });
@@ -342,6 +345,7 @@ const displayBands = computed(() => {
 // Load data
 onMounted(async () => {
   await loadBands();
+  loadFavorites();
 });
 
 const loadBands = async () => {
@@ -460,6 +464,62 @@ const formatDate = (dateString) => {
 const handleImageError = (event, band) => {
   // Hide the broken image
   event.target.style.display = 'none';
+};
+
+// Favorites functions
+const loadFavorites = () => {
+  const saved = localStorage.getItem('mitchly_favorites');
+  if (saved) {
+    try {
+      const favArray = JSON.parse(saved);
+      favorites.value = new Set(favArray);
+    } catch (e) {
+      console.error('Error loading favorites:', e);
+      favorites.value = new Set();
+    }
+  }
+};
+
+const saveFavorites = () => {
+  const favArray = Array.from(favorites.value);
+  localStorage.setItem('mitchly_favorites', JSON.stringify(favArray));
+};
+
+const toggleFavorite = async (band) => {
+  // Check if user is authenticated
+  if (!authStore.user) {
+    // Redirect to auth if not logged in
+    const confirmed = confirm('You need to be logged in to add favorites. Would you like to sign in?');
+    if (confirmed) {
+      router.push('/');
+    }
+    return;
+  }
+  
+  const bandId = band.$id;
+  if (favorites.value.has(bandId)) {
+    favorites.value.delete(bandId);
+  } else {
+    favorites.value.add(bandId);
+  }
+  
+  // Force reactivity update
+  favorites.value = new Set(favorites.value);
+  saveFavorites();
+};
+
+const handleFavoritesClick = () => {
+  if (!authStore.user) {
+    // Redirect to auth if not logged in
+    const confirmed = confirm('You need to be logged in to view favorites. Would you like to sign in?');
+    if (confirmed) {
+      router.push('/');
+    }
+  } else {
+    // Filter to show only favorites
+    alert('Showing favorites (feature coming soon)');
+    // TODO: Add filter to show only favorite bands
+  }
 };
 </script>
 

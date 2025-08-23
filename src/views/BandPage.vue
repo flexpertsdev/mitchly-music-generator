@@ -608,6 +608,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
+import { functions } from '../lib/appwrite';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import Chip from '../components/Chip.vue';
 import { 
@@ -760,16 +761,14 @@ const handleGenerateLyrics = async (song) => {
   generatingSongIndex.value = song.$id;
   
   try {
-    // Call the generate-lyrics-v2 function directly
-    const response = await fetch('/functions/v1/generate-lyrics-v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ songId: song.$id })
-    });
+    // Call the generate-lyrics-v2 function using Appwrite SDK
+    const response = await functions.createExecution(
+      'generate-lyrics-v2',
+      JSON.stringify({ songId: song.$id }),
+      false
+    );
     
-    const result = await response.json();
+    const result = JSON.parse(response.responseBody);
     
     if (result.success) {
       // Start polling for completion
@@ -821,16 +820,14 @@ const handleGenerateAudio = async (song) => {
       throw new Error('Please generate lyrics first');
     }
     
-    // Call the generate-audio-v2 function directly
-    const response = await fetch('/functions/v1/generate-audio-v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ songId: song.$id })
-    });
+    // Call the generate-audio-v2 function using Appwrite SDK
+    const response = await functions.createExecution(
+      'generate-audio-v2',
+      JSON.stringify({ songId: song.$id }),
+      false
+    );
     
-    const result = await response.json();
+    const result = JSON.parse(response.responseBody);
     
     if (result.success && result.taskId) {
       // Update the song with the task ID
@@ -863,19 +860,17 @@ const handleCheckAudioStatus = async (song) => {
   try {
     audioGenerationStatus.value[song.$id] = { status: 'checking' };
     
-    // Call the check-audio-status-v2 function
-    const response = await fetch('/functions/v1/check-audio-status-v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
+    // Call the check-audio-status-v2 function using Appwrite SDK
+    const response = await functions.createExecution(
+      'check-audio-status-v2',
+      JSON.stringify({ 
         taskId: song.murekaTaskId,
         songId: song.$id 
-      })
-    });
+      }),
+      false
+    );
     
-    const result = await response.json();
+    const result = JSON.parse(response.responseBody);
     
     if (result.success) {
       if (result.status === 'succeeded' && result.audioUrl) {
