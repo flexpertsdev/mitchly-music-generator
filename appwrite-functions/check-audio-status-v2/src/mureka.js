@@ -164,7 +164,7 @@ class MurekaService {
       
       return {
         taskId: taskId,
-        status: normalizedStatus,
+        status: data.status, // Return the raw status from Mureka
         progress: progress,
         audioUrl: audioUrl,
         duration: duration,

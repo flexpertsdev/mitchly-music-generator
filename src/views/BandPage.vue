@@ -300,58 +300,68 @@
             </h3>
             <div class="space-y-2 sm:space-y-3">
               <div
-                v-for="(track, index) in bandProfile.trackListing"
-                :key="index"
+                v-for="(song, index) in sortedSongs"
+                :key="song.$id"
                 class="border border-gray-700 rounded-lg overflow-hidden hover:border-mitchly-blue/50 transition-all duration-300 bg-mitchly-dark/30"
               >
                 <!-- Track Header (Always Visible) -->
                 <div 
                   class="p-3 sm:p-4 hover:bg-mitchly-dark/50 transition-all cursor-pointer"
-                  @click="toggleTrack(index)"
+                  @click="toggleTrack(song.$id)"
                 >
                   <!-- Mobile Layout: Stack elements -->
                   <div class="sm:hidden">
                     <div class="flex items-start justify-between mb-2">
                       <div class="flex items-center gap-2 flex-1">
-                        <span class="text-gray-400 text-sm">{{ index + 1 }}.</span>
-                        <span class="font-medium text-white text-sm">{{ track }}</span>
-
+                        <span class="text-gray-400 text-sm">{{ song.trackNumber }}.</span>
+                        <span class="font-medium text-white text-sm">{{ song.title }}</span>
                       </div>
                       <ChevronDown 
-                        :class="['w-4 h-4 text-gray-400 transition-transform flex-shrink-0', expandedTracks[index] ? 'rotate-180' : '']"
+                        :class="['w-4 h-4 text-gray-400 transition-transform flex-shrink-0', expandedTracks[song.$id] ? 'rotate-180' : '']"
                       />
                     </div>
                     <!-- Action Buttons (Below title on mobile) -->
                     <div class="flex gap-2 mt-2">
+                      <!-- Simplified button logic -->
                       <button
-                        v-if="!getSongLyrics(track)"
-                        @click.stop="handleGenerateSong(track, index + 1)"
-                        :disabled="generatingSongIndex === index"
-                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
-                      >
-                        <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
-                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
-                      </button>
-                      <button
-                        v-if="getSongLyrics(track) && !getSongAudio(track)"
-                        @click.stop="handleGenerateAudio(track)"
-                        :disabled="audioGenerationStatus[track]?.status === 'processing'"
-                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
-                      >
-                        <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
-                        <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>
-                          {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
-                        </span>
-                      </button>
-                      <button
-                        v-if="getSongAudio(track)"
-                        @click.stop="handlePlaySong(track)"
+                        v-if="song.audioUrl"
+                        @click.stop="handlePlaySong(song)"
                         class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 shadow-lg hover:shadow-xl flex-1"
                       >
                         <PlayCircle class="w-3 h-3" />
                         <span>Play</span>
+                      </button>
+                      <button
+                        v-else-if="song.murekaTaskId"
+                        @click.stop="handleCheckAudioStatus(song)"
+                        :disabled="audioGenerationStatus[song.$id]?.status === 'checking'"
+                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+                      >
+                        <div v-if="audioGenerationStatus[song.$id]?.status === 'checking'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <Music2 v-else class="w-3 h-3" />
+                        <span>{{ audioGenerationStatus[song.$id]?.status === 'checking' ? 'Checking...' : 'Check Status' }}</span>
+                      </button>
+                      <button
+                        v-else-if="song.lyrics"
+                        @click.stop="handleGenerateAudio(song)"
+                        :disabled="audioGenerationStatus[song.$id]?.status === 'processing'"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+                      >
+                        <Music2 v-if="!audioGenerationStatus[song.$id]?.status" class="w-3 h-3" />
+                        <div v-else-if="audioGenerationStatus[song.$id]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>
+                          {{ audioGenerationStatus[song.$id]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                        </span>
+                      </button>
+                      <button
+                        v-else
+                        @click.stop="handleGenerateLyrics(song)"
+                        :disabled="generatingSongIndex === song.$id"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+                      >
+                        <Zap v-if="generatingSongIndex !== song.$id" class="w-3 h-3" />
+                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>{{ generatingSongIndex === song.$id ? 'Generating...' : 'Generate Lyrics' }}</span>
                       </button>
                     </div>
                   </div>
@@ -359,72 +369,82 @@
                   <!-- Desktop Layout: Side by side -->
                   <div class="hidden sm:flex items-center justify-between">
                     <div class="flex items-center gap-3 flex-1">
-                      <span class="text-gray-400 w-8">{{ index + 1 }}.</span>
-                      <span class="font-medium text-white">{{ track }}</span>
-
+                      <span class="text-gray-400 w-8">{{ song.trackNumber }}.</span>
+                      <span class="font-medium text-white">{{ song.title }}</span>
                     </div>
                     <div class="flex items-center gap-2">
+                      <!-- Simplified button logic -->
                       <button
-                        v-if="!getSongLyrics(track)"
-                        @click.stop="handleGenerateSong(track, index + 1)"
-                        :disabled="generatingSongIndex === index"
-                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
-                      >
-                        <Zap v-if="generatingSongIndex !== index" class="w-3 h-3" />
-                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span class="hidden lg:inline">{{ generatingSongIndex === index ? 'Generating...' : 'Generate Lyrics' }}</span>
-                        <span class="lg:hidden">{{ generatingSongIndex === index ? '...' : 'Lyrics' }}</span>
-                      </button>
-                      <button
-                        v-if="getSongLyrics(track) && !getSongAudio(track)"
-                        @click.stop="handleGenerateAudio(track)"
-                        :disabled="audioGenerationStatus[track]?.status === 'processing'"
-                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
-                      >
-                        <Music2 v-if="!audioGenerationStatus[track]?.status" class="w-3 h-3" />
-                        <div v-else-if="audioGenerationStatus[track]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span class="hidden lg:inline">
-                          {{ audioGenerationStatus[track]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
-                        </span>
-                        <span class="lg:hidden">
-                          {{ audioGenerationStatus[track]?.status === 'processing' ? '...' : 'Audio' }}
-                        </span>
-                      </button>
-                      <button
-                        v-if="getSongAudio(track)"
-                        @click.stop="handlePlaySong(track)"
+                        v-if="song.audioUrl"
+                        @click.stop="handlePlaySong(song)"
                         class="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 shadow-lg hover:shadow-xl"
                       >
                         <PlayCircle class="w-3 h-3" />
-                        <span class="hidden lg:inline">Play</span>
-                        <span class="lg:hidden">Play</span>
+                        <span>Play</span>
+                      </button>
+                      <button
+                        v-else-if="song.murekaTaskId"
+                        @click.stop="handleCheckAudioStatus(song)"
+                        :disabled="audioGenerationStatus[song.$id]?.status === 'checking'"
+                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                      >
+                        <div v-if="audioGenerationStatus[song.$id]?.status === 'checking'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <Music2 v-else class="w-3 h-3" />
+                        <span class="hidden lg:inline">{{ audioGenerationStatus[song.$id]?.status === 'checking' ? 'Checking...' : 'Check Status' }}</span>
+                        <span class="lg:hidden">{{ audioGenerationStatus[song.$id]?.status === 'checking' ? '...' : 'Status' }}</span>
+                      </button>
+                      <button
+                        v-else-if="song.lyrics"
+                        @click.stop="handleGenerateAudio(song)"
+                        :disabled="audioGenerationStatus[song.$id]?.status === 'processing'"
+                        class="bg-mitchly-blue hover:bg-mitchly-blue/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                      >
+                        <Music2 v-if="!audioGenerationStatus[song.$id]?.status" class="w-3 h-3" />
+                        <div v-else-if="audioGenerationStatus[song.$id]?.status === 'processing'" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span class="hidden lg:inline">
+                          {{ audioGenerationStatus[song.$id]?.status === 'processing' ? 'Generating...' : 'Generate Audio' }}
+                        </span>
+                        <span class="lg:hidden">
+                          {{ audioGenerationStatus[song.$id]?.status === 'processing' ? '...' : 'Audio' }}
+                        </span>
+                      </button>
+                      <button
+                        v-else
+                        @click.stop="handleGenerateLyrics(song)"
+                        :disabled="generatingSongIndex === song.$id"
+                        class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                      >
+                        <Zap v-if="generatingSongIndex !== song.$id" class="w-3 h-3" />
+                        <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span class="hidden lg:inline">{{ generatingSongIndex === song.$id ? 'Generating...' : 'Generate Lyrics' }}</span>
+                        <span class="lg:hidden">{{ generatingSongIndex === song.$id ? '...' : 'Lyrics' }}</span>
                       </button>
                       <!-- Expand/Collapse Icon -->
                       <ChevronDown 
-                        :class="['w-5 h-5 text-gray-400 transition-transform', expandedTracks[index] ? 'rotate-180' : '']"
+                        :class="['w-5 h-5 text-gray-400 transition-transform', expandedTracks[song.$id] ? 'rotate-180' : '']"
                       />
                     </div>
                   </div>
                   <!-- Song Description Preview (if available) -->
-                  <div v-if="getSongDescription(track) && !expandedTracks[index]" class="mt-2 pl-6 sm:pl-11">
-                    <p class="text-xs sm:text-sm text-gray-400 line-clamp-2">{{ getSongDescription(track) }}</p>
+                  <div v-if="song.description && !expandedTracks[song.$id]" class="mt-2 pl-6 sm:pl-11">
+                    <p class="text-xs sm:text-sm text-gray-400 line-clamp-2">{{ song.description }}</p>
                   </div>
                 </div>
 
                 <!-- Expanded Content -->
-                <div v-if="expandedTracks[index]" class="border-t border-gray-700 p-6 bg-mitchly-dark/70">
+                <div v-if="expandedTracks[song.$id]" class="border-t border-gray-700 p-6 bg-mitchly-dark/70">
                   <!-- Song Description -->
-                  <div v-if="getSongDescription(track)" class="mb-4">
+                  <div v-if="song.songDescription || song.description" class="mb-4">
                     <h4 class="text-sm font-semibold text-gray-300 mb-2">Song Description</h4>
-                    <p class="text-gray-400 text-sm">{{ getSongDescription(track) }}</p>
+                    <p class="text-gray-400 text-sm">{{ song.songDescription || song.description }}</p>
                   </div>
                   
                   <!-- Lyrics -->
-                  <div v-if="getSongLyrics(track)">
+                  <div v-if="song.lyrics">
                     <div class="flex items-center justify-between mb-3">
                       <h4 class="text-sm font-semibold text-gray-300">Lyrics</h4>
                       <button
-                        @click="copyToClipboard(getSongLyricsForMureka(songs.find(s => s.title === track)), 'Lyrics')"
+                        @click="copyToClipboard(getSongLyricsForMureka(song), 'Lyrics')"
                         class="bg-green-600/20 hover:bg-green-600/30 px-3 py-1 rounded-lg text-xs transition-all flex items-center gap-1 text-green-400 border border-green-600/30"
                       >
                         <Copy v-if="copiedMessage !== 'Lyrics'" class="w-3 h-3" />
@@ -432,11 +452,11 @@
                         {{ copiedMessage === 'Lyrics' ? 'Copied!' : 'Copy Lyrics' }}
                       </button>
                     </div>
-                    <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans bg-mitchly-dark/50 p-4 rounded-lg border border-gray-700">{{ getSongLyrics(track) }}</pre>
+                    <pre class="whitespace-pre-wrap text-gray-400 text-sm font-sans bg-mitchly-dark/50 p-4 rounded-lg border border-gray-700">{{ song.lyrics }}</pre>
                   </div>
                   
                   <!-- No Content Message -->
-                  <div v-if="!getSongLyrics(track) && !getSongDescription(track)" class="text-center py-4">
+                  <div v-if="!song.lyrics && !song.songDescription && !song.description" class="text-center py-4">
                     <p class="text-gray-500 text-sm">Click "Generate Lyrics" to create content for this song</p>
                   </div>
                 </div>
@@ -636,6 +656,14 @@ const tabs = [
 ];
 
 // Computed
+const sortedSongs = computed(() => {
+  return songs.value.slice().sort((a, b) => {
+    const numA = a.trackNumber || 999;
+    const numB = b.trackNumber || 999;
+    return numA - numB;
+  });
+});
+
 const availableAudioTracks = computed(() => {
   return songs.value
     .filter(song => song.audioUrl)
@@ -724,154 +752,167 @@ const startGenerationPolling = (bandId) => {
 };
 
 // Methods
-const getSongLyrics = (trackTitle) => {
-  const song = songs.value.find(s => s.title === trackTitle);
-  return song?.lyrics;
+const toggleTrack = (songId) => {
+  expandedTracks.value[songId] = !expandedTracks.value[songId];
 };
 
-const getSongAudio = (trackTitle) => {
-  const song = songs.value.find(s => s.title === trackTitle);
-  return song?.audioUrl;
-};
-
-const getSongDescription = (trackTitle) => {
-  const song = songs.value.find(s => s.title === trackTitle);
-  return song?.description;
-};
-
-const toggleTrack = (index) => {
-  expandedTracks.value[index] = !expandedTracks.value[index];
-};
-
-const handleGenerateSong = async (songTitle, trackNumber) => {
-  generatingSongIndex.value = trackNumber - 1;
+const handleGenerateLyrics = async (song) => {
+  generatingSongIndex.value = song.$id;
   
   try {
-    let song = songs.value.find(s => s.title === songTitle);
+    // Call the generate-lyrics-v2 function directly
+    const response = await fetch('/functions/v1/generate-lyrics-v2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ songId: song.$id })
+    });
     
-    if (!song) {
-      // Create new song with generating status
-      song = await songService.create({
-        bandId: band.value.$id,
-        title: songTitle,
-        trackNumber: trackNumber,
-        status: 'generating', // Triggers lyrics generation
-        audioStatus: 'pending',
-        primaryGenre: band.value.primaryGenre || 'Rock',
-        description: `Track ${trackNumber} from ${band.value.name}`
-      });
-      // Add to local songs array
-      songs.value.push(song);
+    const result = await response.json();
+    
+    if (result.success) {
+      // Start polling for completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const updatedSong = await songService.get(song.$id);
+          
+          if (updatedSong.lyrics) {
+            clearInterval(pollInterval);
+            // Update the song in our local array
+            const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+            if (songIndex !== -1) {
+              songs.value[songIndex] = updatedSong;
+            }
+            expandedTracks.value[song.$id] = true;
+            showToast('Lyrics generated successfully!', 'success');
+            generatingSongIndex.value = null;
+          }
+        } catch (err) {
+          console.error('Error polling song status:', err);
+        }
+      }, 2000);
+      
+      // Stop polling after 60 seconds
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (generatingSongIndex.value === song.$id) {
+          generatingSongIndex.value = null;
+          showToast('Lyrics generation timed out. Please try again.', 'error');
+        }
+      }, 60000);
     } else {
-      // Update existing song to trigger lyrics generation
-      await songService.update(song.$id, {
-        status: 'generating'
-      });
+      throw new Error(result.error || 'Failed to start lyrics generation');
     }
     
-    // Start polling for completion
-    const pollInterval = setInterval(async () => {
-      try {
-        const updatedSong = await songService.get(song.$id);
-        
-        if (updatedSong.status === 'completed') {
-          clearInterval(pollInterval);
-          // Update the song in our local array
-          const songIndex = songs.value.findIndex(s => s.$id === song.$id);
-          if (songIndex !== -1) {
-            songs.value[songIndex] = updatedSong;
-          }
-          expandedTracks.value[trackNumber - 1] = true;
-          showToast('Lyrics generated successfully!', 'success');
-          generatingSongIndex.value = null;
-        } else if (updatedSong.status === 'failed') {
-          clearInterval(pollInterval);
-          showToast('Failed to generate lyrics', 'error');
-          generatingSongIndex.value = null;
-        }
-      } catch (err) {
-        console.error('Error polling song status:', err);
-      }
-    }, 2000);
-    
-    // Stop polling after 60 seconds
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      if (generatingSongIndex.value === trackNumber - 1) {
-        generatingSongIndex.value = null;
-        showToast('Lyrics generation timed out. Please try again.', 'error');
-      }
-    }, 60000);
-    
   } catch (error) {
-    console.error('Error generating song:', error);
-    showToast('Failed to generate song. Please try again.', 'error');
+    console.error('Error generating lyrics:', error);
+    showToast('Failed to generate lyrics. Please try again.', 'error');
     generatingSongIndex.value = null;
   }
 };
 
-const handleGenerateAudio = async (songTitle) => {
-  const song = songs.value.find(s => s.title === songTitle);
-  if (!song) return;
-  
+const handleGenerateAudio = async (song) => {
   try {
-    audioGenerationStatus.value[songTitle] = { status: 'processing' };
+    audioGenerationStatus.value[song.$id] = { status: 'processing' };
     showToast('Starting audio generation...', 'info');
     
     if (!song.lyrics) {
       throw new Error('Please generate lyrics first');
     }
     
-    // Update song to trigger audio generation via Appwrite function
-    await songService.update(song.$id, {
-      audioStatus: 'generating',
-      audioGenerationStartedAt: new Date().toISOString()
+    // Call the generate-audio-v2 function directly
+    const response = await fetch('/functions/v1/generate-audio-v2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ songId: song.$id })
     });
     
-    // Poll for audio completion
-    const pollInterval = setInterval(async () => {
-      try {
-        const updatedSong = await songService.get(song.$id);
-        
-        if (updatedSong.audioStatus === 'completed' && updatedSong.audioUrl) {
-          clearInterval(pollInterval);
-          // Update local song data
-          const songIndex = songs.value.findIndex(s => s.$id === song.$id);
-          if (songIndex !== -1) {
-            songs.value[songIndex] = updatedSong;
-          }
-          audioGenerationStatus.value[songTitle] = { status: 'completed' };
-          showToast(`Audio for "${songTitle}" is ready!`, 'success');
-        } else if (updatedSong.audioStatus === 'failed') {
-          clearInterval(pollInterval);
-          audioGenerationStatus.value[songTitle] = { status: 'failed' };
-          const errorMsg = updatedSong.audioError || 'Failed to generate audio';
-          showToast(errorMsg, 'error');
-        } else if (updatedSong.audioStatus === 'processing') {
-          // Update status to show it's being processed by Mureka
-          audioGenerationStatus.value[songTitle] = { 
-            status: 'processing',
-            message: 'Audio is being processed by Mureka...'
-          };
-        }
-      } catch (err) {
-        console.error('Error polling audio status:', err);
-      }
-    }, 3000); // Poll every 3 seconds
+    const result = await response.json();
     
-    // Stop polling after 5 minutes (audio generation takes longer)
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      if (audioGenerationStatus.value[songTitle]?.status !== 'completed') {
-        audioGenerationStatus.value[songTitle] = { status: 'failed' };
-        showToast('Audio generation timed out. Please try again.', 'error');
+    if (result.success && result.taskId) {
+      // Update the song with the task ID
+      const updatedSong = await songService.update(song.$id, {
+        murekaTaskId: result.taskId
+      });
+      
+      // Update local song data
+      const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+      if (songIndex !== -1) {
+        songs.value[songIndex] = { ...songs.value[songIndex], murekaTaskId: result.taskId };
       }
-    }, 300000);
+      
+      audioGenerationStatus.value[song.$id] = { status: 'completed' };
+      showToast('Audio generation started! Click "Check Status" to monitor progress.', 'success');
+    } else {
+      throw new Error(result.error || 'Failed to start audio generation');
+    }
     
   } catch (error) {
     console.error('Error generating audio:', error);
-    audioGenerationStatus.value[songTitle] = { status: 'failed' };
+    audioGenerationStatus.value[song.$id] = { status: 'failed' };
     showToast(error.message || 'Failed to generate audio. Please try again.', 'error');
+  }
+};
+
+const handleCheckAudioStatus = async (song) => {
+  if (!song.murekaTaskId) return;
+  
+  try {
+    audioGenerationStatus.value[song.$id] = { status: 'checking' };
+    
+    // Call the check-audio-status-v2 function
+    const response = await fetch('/functions/v1/check-audio-status-v2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        taskId: song.murekaTaskId,
+        songId: song.$id 
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      if (result.status === 'succeeded' && result.audioUrl) {
+        // Update the song with the audio URL
+        const updatedSong = await songService.get(song.$id);
+        
+        // Update local song data
+        const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+        if (songIndex !== -1) {
+          songs.value[songIndex] = updatedSong;
+        }
+        
+        audioGenerationStatus.value[song.$id] = { status: 'completed' };
+        showToast(`Audio for "${song.title}" is ready!`, 'success');
+      } else if (result.status === 'failed') {
+        audioGenerationStatus.value[song.$id] = { status: 'failed' };
+        showToast('Audio generation failed. Please try again.', 'error');
+      } else {
+        // Still processing
+        audioGenerationStatus.value[song.$id] = { status: 'processing' };
+        showToast(`Audio generation ${result.progress}% complete. Check again in a moment.`, 'info');
+      }
+    } else {
+      throw new Error(result.error || 'Failed to check status');
+    }
+    
+  } catch (error) {
+    console.error('Error checking audio status:', error);
+    audioGenerationStatus.value[song.$id] = { status: 'failed' };
+    showToast('Failed to check audio status. Please try again.', 'error');
+  } finally {
+    // Clear the checking status after a delay
+    setTimeout(() => {
+      if (audioGenerationStatus.value[song.$id]?.status === 'checking') {
+        delete audioGenerationStatus.value[song.$id];
+      }
+    }, 2000);
   }
 };
 
@@ -936,9 +977,8 @@ const showToast = (message, type = 'info') => {
   }, 3000);
 };
 
-const handlePlaySong = (trackTitle) => {
-  const song = songs.value.find(s => s.title === trackTitle);
-  if (!song || !song.audioUrl) return;
+const handlePlaySong = (song) => {
+  if (!song.audioUrl) return;
   
   currentlyPlayingTrack.value = {
     id: song.$id,

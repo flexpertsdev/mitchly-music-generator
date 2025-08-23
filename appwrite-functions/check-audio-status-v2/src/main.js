@@ -56,7 +56,8 @@ export default async ({ req, res, log, error }) => {
     log(`Task status: ${status.status}, Progress: ${status.progress}%`);
     
     // If we have a songId and the audio is complete, update the song
-    if (songId && status.status === 'completed' && status.audioUrl) {
+    // Check for both 'completed' and 'succeeded' status (Mureka may use either)
+    if (songId && (status.status === 'completed' || status.status === 'succeeded') && status.audioUrl) {
       try {
         const appwrite = new AppwriteService(req.headers['x-appwrite-key']);
         
