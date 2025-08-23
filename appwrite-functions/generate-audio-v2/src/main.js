@@ -107,11 +107,6 @@ export default async ({ req, res, log, error }) => {
       }
     }
     
-    // Update status to generating
-    await appwrite.updateSong(DATABASE_ID, SONGS_COLLECTION, songId, {
-      status: 'generating_audio'
-    });
-    
     // Prepare generation parameters
     const generationParams = {
       title: songData.title,
@@ -128,48 +123,10 @@ export default async ({ req, res, log, error }) => {
     
     log(`Audio generation started, task ID: ${result.taskId}`);
     
-    // Update song with generation task ID
+    // Update song with ONLY the task ID - nothing else!
     await appwrite.updateSong(DATABASE_ID, SONGS_COLLECTION, songId, {
-      audioGenerationTaskId: result.taskId,
-      status: 'audio_processing',
-      audioGenerationStartedAt: new Date().toISOString()
+      audioGenerationTaskId: result.taskId
     });
-    
-    // If direct call, we can optionally wait for completion (with timeout)
-    if (isDirectCall && body.waitForCompletion) {
-      log('Waiting for audio generation to complete...');
-      const maxWaitTime = 30000; // 30 seconds max wait
-      const startTime = Date.now();
-      
-      while (Date.now() - startTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-        
-        const status = await mureka.checkStatus(result.taskId);
-        
-        if (status.status === 'completed' && status.audioUrl) {
-          // Update song with final audio URL
-          await appwrite.updateSong(DATABASE_ID, SONGS_COLLECTION, songId, {
-            audioUrl: status.audioUrl,
-            audioDuration: status.duration,
-            status: 'audio_complete',
-            audioGenerationCompletedAt: new Date().toISOString()
-          });
-          
-          return res.json({
-            success: true,
-            songId: songId,
-            message: 'Audio generated successfully',
-            audioUrl: status.audioUrl,
-            duration: status.duration
-          });
-        } else if (status.status === 'failed') {
-          throw new Error(`Audio generation failed: ${status.error || 'Unknown error'}`);
-        }
-      }
-      
-      // Timeout reached, return processing status
-      log('Audio generation still processing, returning task ID');
-    }
     
     log('Audio generation initiated successfully');
     
@@ -185,17 +142,14 @@ export default async ({ req, res, log, error }) => {
     error(`Function error: ${err.message}`);
     error(`Stack trace: ${err.stack}`);
     
-    // Try to update song status to failed if we have a songId
+    // Don't try to update any fields on error - just log it
     try {
       const songId = req.bodyJson?.songId || req.bodyJson?.$id;
       if (songId) {
-        const appwrite = new AppwriteService(req.headers['x-appwrite-key']);
-        await appwrite.updateSong(DATABASE_ID, SONGS_COLLECTION, songId, {
-          status: 'audio_failed'
-        });
+        error(`Failed to generate audio for song ${songId}`);
       }
     } catch (updateErr) {
-      error(`Failed to update song status: ${updateErr.message}`);
+      error(`Error logging: ${updateErr.message}`);
     }
     
     return res.json({

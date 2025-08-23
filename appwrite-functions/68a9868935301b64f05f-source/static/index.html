@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mureka Music Generator</title>
+
+    <script>
+      async function generateMusic(songId) {
+        const response = await fetch('/', {
+          method: 'POST',
+          body: JSON.stringify({ songId }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const json = await response.json();
+
+        if (!response.ok || json.error) {
+          throw new Error(json.error || 'Failed to generate music');
+        }
+
+        return json;
+      }
+    </script>
+
+    <script src="//unpkg.com/alpinejs" defer></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink@0" />
+    <link rel="stylesheet" href="https://unpkg.com/@appwrite.io/pink-icons@0" />
+  </head>
+  <body class="theme-dark">
+    <main class="main-content">
+      <div class="top-cover u-padding-block-end-56">
+        <div class="container">
+          <div
+            class="u-flex u-gap-16 u-flex-justify-center u-margin-block-start-16"
+          >
+            <h1 class="heading-level-1">🎵 Mureka Music Generator</h1>
+            <code class="u-un-break-text"></code>
+          </div>
+          <p
+            class="body-text-1 u-normal u-margin-block-start-8"
+            style="max-width: 50rem"
+          >
+            Generate AI music for your songs using Mureka AI. Enter a song ID from your database to start the music generation process.
+          </p>
+        </div>
+      </div>
+      <div
+        class="container u-margin-block-start-negative-56"
+        x-data="{ songId: '', result: null, loading: false, error: null }"
+      >
+        <div class="card u-flex u-gap-24 u-flex-vertical">
+          <h4 class="heading-level-4">Generate Music</h4>
+          
+          <!-- Input Field -->
+          <div class="u-flex u-flex-vertical u-gap-8">
+            <label class="label">Song ID</label>
+            <div class="u-flex u-cross-center u-gap-8">
+              <div
+                class="input-text-wrapper u-width-full-line"
+              >
+                <input 
+                  x-model="songId" 
+                  type="text" 
+                  placeholder="Enter song ID from database..." 
+                  @keyup.enter="if(!loading && songId) { 
+                    loading = true; 
+                    error = null; 
+                    result = null; 
+                    generateMusic(songId)
+                      .then(r => result = r)
+                      .catch(e => error = e.message)
+                      .finally(() => loading = false) 
+                  }"
+                />
+              </div>
+
+              <button
+                class="button is-primary"
+                x-bind:disabled="loading || !songId"
+                x-on:click="async () => { 
+                  loading = true; 
+                  error = null; 
+                  result = null; 
+                  try { 
+                    result = await generateMusic(songId) 
+                  } catch(err) { 
+                    error = err.message; 
+                  } finally { 
+                    loading = false; 
+                  } 
+                }"
+              >
+                <span class="text" x-show="!loading">Generate</span>
+                <span class="text" x-show="loading">Processing...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <template x-if="error">
+            <div class="alert is-danger">
+              <div class="alert-wrapper">
+                <span class="icon-exclamation-circle" aria-hidden="true"></span>
+                <div class="alert-content">
+                  <h6 class="alert-title">Error</h6>
+                  <p class="alert-message" x-text="error"></p>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Success Result -->
+          <template x-if="result && result.success">
+            <div class="alert is-success">
+              <div class="alert-wrapper">
+                <span class="icon-check-circle" aria-hidden="true"></span>
+                <div class="alert-content">
+                  <h6 class="alert-title">Success!</h6>
+                  <p class="alert-message">Music generation started successfully.</p>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="result && result.success">
+            <div class="u-flex u-flex-vertical u-gap-12 card">
+              <h5 class="eyebrow-heading-2">Generation Details:</h5>
+              
+              <div class="u-flex u-flex-vertical u-gap-8">
+                <div class="u-flex u-gap-8">
+                  <span class="text u-bold">Song ID:</span>
+                  <span class="text u-color-text-gray" x-text="result.songId"></span>
+                </div>
+                
+                <div class="u-flex u-gap-8">
+                  <span class="text u-bold">Mureka Task ID:</span>
+                  <code class="inline-code" x-text="result.murekaTaskId"></code>
+                </div>
+                
+                <div class="u-flex u-gap-8">
+                  <span class="text u-bold">Status:</span>
+                  <span class="tag" x-text="result.status"></span>
+                </div>
+                
+                <template x-if="result.traceId">
+                  <div class="u-flex u-gap-8">
+                    <span class="text u-bold">Trace ID:</span>
+                    <code class="inline-code" x-text="result.traceId"></code>
+                  </div>
+                </template>
+              </div>
+              
+              <div class="alert is-info u-margin-block-start-16">
+                <div class="alert-wrapper">
+                  <span class="icon-info-circle" aria-hidden="true"></span>
+                  <div class="alert-content">
+                    <p class="alert-message">
+                      The music generation process has started. The Mureka task ID has been saved to your song document. 
+                      You can use this ID to check the generation status later.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Instructions -->
+          <div class="u-margin-block-start-24">
+            <h5 class="eyebrow-heading-2">How to use:</h5>
+            <ol class="u-margin-block-start-8">
+              <li class="u-margin-block-start-4">Enter the ID of a song document from your database</li>
+              <li class="u-margin-block-start-4">Click "Generate" to start the music generation process</li>
+              <li class="u-margin-block-start-4">The function will use the song's lyrics and metadata to generate music</li>
+              <li class="u-margin-block-start-4">A Mureka task ID will be saved to your song document for tracking</li>
+            </ol>
+          </div>
+          
+          <!-- Info -->
+          <div class="u-text-center u-margin-block-start-16">
+            <p class="text u-color-text-gray">
+              Powered by Mureka AI<br>
+              <span style="color: #f02e65;">🎵 Music generation API</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

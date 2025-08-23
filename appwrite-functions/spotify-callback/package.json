@@ -1,0 +1,13 @@
+{
+  "name": "spotify-callback",
+  "version": "1.0.0",
+  "description": "Handle Spotify OAuth callback and fetch user data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-appwrite": "^11.0.0",
+    "node-fetch": "^2.6.7"
+  }
+}
