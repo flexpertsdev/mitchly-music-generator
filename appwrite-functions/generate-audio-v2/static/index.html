@@ -25,8 +25,8 @@
         <div>
           <h2 class="heading-level-4">Generate Audio</h2>
           <p class="text u-margin-block-start-8">
-            Enter the ID of a song that has lyrics. The function will generate an audio track
-            based on the lyrics and band style.
+            Enter the ID of a song that has lyrics. The function will send a request to Mureka
+            and return the task ID immediately (no waiting).
           </p>
           
           <div class="u-margin-block-start-16">
@@ -38,18 +38,6 @@
               placeholder="Enter song document ID"
               :disabled="isGenerating"
             />
-          </div>
-          
-          <div class="u-margin-block-start-16">
-            <label class="form-label">
-              <input 
-                x-model="waitForCompletion"
-                type="checkbox"
-                class="input-checkbox"
-                :disabled="isGenerating"
-              />
-              <span class="text">Wait for completion (max 30 seconds)</span>
-            </label>
           </div>
           
           <button 
@@ -97,15 +85,14 @@
             <div class="u-margin-block-start-24">
               <h3 class="heading-level-5">Generation Result</h3>
               
-              <template x-if="audioUrl">
+              <template x-if="result.taskId">
                 <div class="u-margin-block-start-16">
-                  <h4 class="heading-level-6">Generated Audio</h4>
-                  <audio controls class="u-margin-block-start-8" style="width: 100%;">
-                    <source :src="audioUrl" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                  </audio>
-                  <p class="text u-margin-block-start-4">
-                    <a :href="audioUrl" target="_blank" class="link">Download Audio</a>
+                  <h4 class="heading-level-6" style="color: #4CAF50;">✅ Task ID Generated Successfully</h4>
+                  <div class="card u-margin-block-start-8" style="background: #2a2a2a; padding: 1rem;">
+                    <code style="color: #4CAF50; font-size: 1.2rem; font-weight: bold;" x-text="result.taskId"></code>
+                  </div>
+                  <p class="text u-margin-block-start-8">
+                    Use this ID with the check-audio-status function or Mureka API to check generation progress.
                   </p>
                 </div>
               </template>
@@ -129,32 +116,24 @@
           </p>
           <div class="code-block u-margin-block-start-8">
             <pre>{
-  "songId": "your-song-document-id",
-  "waitForCompletion": false  // Optional, waits up to 30s
+  "songId": "your-song-document-id"
 }</pre>
           </div>
           
-          <h4 class="heading-level-6 u-margin-block-start-16">Response (Immediate)</h4>
+          <h4 class="heading-level-6 u-margin-block-start-16">Response</h4>
           <div class="code-block u-margin-block-start-8">
             <pre>{
   "success": true,
   "songId": "song-id",
   "message": "Audio generation started",
-  "taskId": "task-id",
-  "status": "processing"
+  "taskId": "task-id"  // Save this ID!
 }</pre>
           </div>
           
-          <h4 class="heading-level-6 u-margin-block-start-16">Response (With Completion)</h4>
-          <div class="code-block u-margin-block-start-8">
-            <pre>{
-  "success": true,
-  "songId": "song-id",
-  "message": "Audio generated successfully",
-  "audioUrl": "https://...",
-  "duration": 180
-}</pre>
-          </div>
+          <p class="text u-margin-block-start-8">
+            ⚠️ The function returns immediately with a task ID. Audio generation takes ~2 minutes.
+            Use the task ID to check status later.
+          </p>
           
           <h4 class="heading-level-6 u-margin-block-start-16">Database Event Trigger</h4>
           <p class="text u-margin-block-start-8">
@@ -209,7 +188,6 @@
     function audioGenerator() {
       return {
         songId: '',
-        waitForCompletion: false,
         isGenerating: false,
         isPolling: false,
         result: null,
@@ -235,8 +213,7 @@
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                songId: this.songId,
-                waitForCompletion: this.waitForCompletion
+                songId: this.songId
               })
             });
             
