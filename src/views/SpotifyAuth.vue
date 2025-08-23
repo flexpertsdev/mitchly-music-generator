@@ -86,7 +86,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { account, functions, databases } from '@/lib/appwrite'
+import { account, OAuthProvider } from '@/lib/appwrite'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 
@@ -98,18 +98,13 @@ const handleSpotifyAuth = async () => {
   try {
     isLoading.value = true
     
-    // Get the Spotify auth URL from your function
-    const response = await functions.createExecution(
-      'spotify-auth-url',
-      JSON.stringify({
-        redirectUri: `${window.location.origin}/spotify-callback`
-      })
+    // Use Appwrite's built-in OAuth2 session creation
+    account.createOAuth2Session(
+      OAuthProvider.Spotify,
+      `${window.location.origin}/spotify-callback`, // success URL
+      `${window.location.origin}/auth?error=true`, // failure URL
+      ['user-read-private', 'user-read-email', 'user-top-read'] // Spotify scopes
     )
-    
-    const { authUrl } = JSON.parse(response.responseBody)
-    
-    // Redirect to Spotify auth
-    window.location.href = authUrl
     
   } catch (error) {
     console.error('Spotify auth error:', error)

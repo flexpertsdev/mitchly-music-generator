@@ -6,7 +6,7 @@ import Home from '../views/Home.vue';
 import BandPage from '../views/BandPage.vue';
 import Gallery from '../views/Gallery.vue';
 import SpotifyAuth from '../views/SpotifyAuth.vue';
-import SpotifyCallback from '../views/SpotifyCallback.vue';
+import SpotifyCallback from '../views/SpotifyCallbackSimple.vue';
 
 const routes = [
   {
