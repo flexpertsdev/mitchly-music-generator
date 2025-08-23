@@ -59,9 +59,11 @@ onMounted(async () => {
     // Get the user account
     const user = await account.get()
     
-    // Store in auth store
-    authStore.user = user
-    authStore.session = session
+    // Store in auth store using the new setAuth method
+    authStore.setAuth(user, session)
+    
+    // Wait a moment to ensure state is saved
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     statusMessage.value = 'Creating your music profile...'
     

@@ -5,17 +5,24 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     session: null,
-    loading: true
+    loading: true,
+    initialized: false
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.user,
+    isAuthenticated: (state) => !!state.user && !!state.session,
     userId: (state) => state.user?.$id || null
   },
 
   actions: {
     async init() {
+      // Prevent multiple initializations
+      if (this.initialized) {
+        return
+      }
+      
       try {
+        this.loading = true
         const session = await account.getSession('current')
         if (session) {
           const user = await account.get()
@@ -24,10 +31,21 @@ export const useAuthStore = defineStore('auth', {
         }
       } catch (error) {
         // Not logged in
-        console.log('No active session')
+        console.log('No active session:', error.message)
+        this.user = null
+        this.session = null
       } finally {
         this.loading = false
+        this.initialized = true
       }
+    },
+    
+    setAuth(user, session) {
+      // Method to directly set auth state (useful for OAuth callbacks)
+      this.user = user
+      this.session = session
+      this.loading = false
+      this.initialized = true
     },
 
     async login(email, password) {
@@ -87,6 +105,6 @@ export const useAuthStore = defineStore('auth', {
   },
 
   persist: {
-    paths: ['user']
+    paths: ['user', 'session', 'initialized']
   }
 })
