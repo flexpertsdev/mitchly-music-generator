@@ -1,4 +1,4 @@
-<template>
+/Users/jos/Developer/mitchly-music-generator/src/views/BandPage.vue<template>
   <div class="band-page min-h-screen bg-mitchly-dark">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
@@ -763,7 +763,7 @@ const handleGenerateLyrics = async (song) => {
   try {
     // Call the generate-lyrics-v2 function using Appwrite SDK
     const response = await functions.createExecution(
-      'generate-lyrics-v2',
+      '68a8b2b0003d1b222b37',
       JSON.stringify({ songId: song.$id }),
       false
     );
@@ -822,7 +822,7 @@ const handleGenerateAudio = async (song) => {
     
     // Call the generate-audio-v2 function using Appwrite SDK
     const response = await functions.createExecution(
-      'generate-audio-v2',
+      '68a8bfb200206781e764',
       JSON.stringify({ songId: song.$id }),
       false
     );
@@ -862,7 +862,7 @@ const handleCheckAudioStatus = async (song) => {
     
     // Call the check-audio-status-v2 function using Appwrite SDK
     const response = await functions.createExecution(
-      'check-audio-status-v2',
+      '68a90b55003701eab423',
       JSON.stringify({ 
         taskId: song.murekaTaskId,
         songId: song.$id 

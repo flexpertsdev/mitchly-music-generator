@@ -184,6 +184,7 @@
 import { ref } from 'vue'
 import { Zap } from 'lucide-vue-next'
 import { bandService } from '../services/appwrite/database'
+import { functions } from '../lib/appwrite'
 import { ID } from 'appwrite'
 
 export default {
@@ -216,21 +217,27 @@ export default {
       if (conceptText.value.trim() && !isCreating.value) {
         isCreating.value = true
         try {
-          // Create band document with status 'draft'
-          const bandData = {
-            prompt: conceptText.value,
-            status: 'draft',
-            name: 'Generating...', // Placeholder name
-            createdAt: new Date().toISOString()
+          // Call the generate-band-v2 function using Appwrite SDK
+          const response = await functions.createExecution(
+            '68a8925e001edfdf0529',
+            JSON.stringify({ prompt: conceptText.value }),
+            false
+          )
+          
+          const result = JSON.parse(response.responseBody)
+          
+          if (result.success && result.bandId) {
+            // Get the created band
+            const band = await bandService.get(result.bandId)
+            
+            // Emit the band creation event
+            emit('bandCreated', band)
+            
+            // Reset form
+            conceptText.value = ''
+          } else {
+            throw new Error(result.error || 'Failed to generate band')
           }
-          
-          const band = await bandService.create(bandData)
-          
-          // Emit the band creation event
-          emit('bandCreated', band)
-          
-          // Reset form
-          conceptText.value = ''
         } catch (error) {
           console.error('Error creating band:', error)
           emit('generate', { error: error.message })
@@ -244,41 +251,50 @@ export default {
       if (formData.value.bandName && formData.value.genre && !isCreating.value) {
         isCreating.value = true
         try {
-          // Prepare the prompt
-          const prompt = formData.value.concept || 
+          // Prepare the detailed prompt with all advanced data
+          let prompt = formData.value.concept || 
             `Create a ${formData.value.genre} band called ${formData.value.bandName}`
           
-          // Create band document with status 'draft' and advanced data
-          const bandData = {
-            prompt: prompt,
-            status: 'draft',
-            name: formData.value.bandName || 'Generating...',
-            advancedData: {
-              bandName: formData.value.bandName,
-              genre: formData.value.genre,
-              albumName: formData.value.albumName,
-              trackCount: formData.value.trackCount,
-              influences: formData.value.influences,
-              themes: formData.value.themes,
-              concept: formData.value.concept
-            },
-            createdAt: new Date().toISOString()
+          // Add additional context to the prompt
+          if (formData.value.albumName) {
+            prompt += `. Album name: ${formData.value.albumName}`
           }
+          if (formData.value.influences) {
+            prompt += `. Influences: ${formData.value.influences}`
+          }
+          if (formData.value.themes) {
+            prompt += `. Lyrical themes: ${formData.value.themes}`
+          }
+          prompt += `. Create ${formData.value.trackCount} tracks.`
           
-          const band = await bandService.create(bandData)
+          // Call the generate-band-v2 function using Appwrite SDK
+          const response = await functions.createExecution(
+            '68a8925e001edfdf0529',
+            JSON.stringify({ prompt: prompt }),
+            false
+          )
           
-          // Emit the band creation event
-          emit('bandCreated', band)
+          const result = JSON.parse(response.responseBody)
           
-          // Reset form
-          formData.value = {
-            bandName: '',
-            genre: '',
-            albumName: '',
-            trackCount: 8,
-            influences: '',
-            themes: '',
-            concept: ''
+          if (result.success && result.bandId) {
+            // Get the created band
+            const band = await bandService.get(result.bandId)
+            
+            // Emit the band creation event
+            emit('bandCreated', band)
+            
+            // Reset form
+            formData.value = {
+              bandName: '',
+              genre: '',
+              albumName: '',
+              trackCount: 8,
+              influences: '',
+              themes: '',
+              concept: ''
+            }
+          } else {
+            throw new Error(result.error || 'Failed to generate band')
           }
         } catch (error) {
           console.error('Error creating band:', error)
