@@ -1,0 +1,99 @@
+## Simple Lyrics Button Fix
+
+This fixes the issue where multiple users can click "Generate Lyrics" simultaneously.
+
+### Summary of Issues Found:
+
+1. **check-audio-status-v2**: ❌ You're right - it doesn't actually update the audioURL in the database
+2. **Lyrics Generation**: ❌ Multiple users can click the button simultaneously
+
+### Simple Fix for Lyrics Button:
+
+Replace the mobile lyrics button (around line 294) from:
+```html
+<button
+  v-else
+  @click.stop="handleGenerateLyrics(song)"
+  :disabled="generatingSongIndex === song.$id"
+  class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+>
+  <Zap v-if="generatingSongIndex !== song.$id" class="w-3 h-3" />
+  <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+  <span>{{ generatingSongIndex === song.$id ? 'Generating...' : 'Generate Lyrics' }}</span>
+</button>
+```
+
+To:
+```html
+<button
+  v-else-if="song.status === 'generating_lyrics'"
+  @click.stop
+  disabled
+  class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 opacity-75 shadow-lg flex-1"
+>
+  <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+  <span>Generating...</span>
+</button>
+<button
+  v-else
+  @click.stop="handleGenerateLyrics(song)"
+  :disabled="generatingSongIndex === song.$id"
+  class="bg-mitchly-purple hover:bg-mitchly-purple/80 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg flex-1"
+>
+  <Zap v-if="generatingSongIndex !== song.$id" class="w-3 h-3" />
+  <div v-else class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+  <span>{{ generatingSongIndex === song.$id ? 'Generating...' : 'Generate Lyrics' }}</span>
+</button>
+```
+
+And replace the desktop lyrics button (around line 349) similarly.
+
+Then update the handleGenerateLyrics function to immediately set song status to 'generating_lyrics':
+
+```javascript
+const handleGenerateLyrics = async (song) => {
+  generatingSongIndex.value = song.$id;
+  
+  try {
+    // First, update the song status to 'generating_lyrics' to prevent multiple requests
+    await songService.update(song.$id, {
+      status: 'generating_lyrics'
+    });
+    
+    // Update local state immediately
+    const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+    if (songIndex !== -1) {
+      songs.value[songIndex].status = 'generating_lyrics';
+    }
+    
+    // Rest of the function stays the same...
+    const response = await functions.createExecution(
+      '68a8b2b0003d1b222b37',
+      JSON.stringify({ songId: song.$id }),
+      false
+    );
+    
+    // ... rest of existing code
+  } catch (error) {
+    // Reset song status on error
+    try {
+      await songService.update(song.$id, { status: 'pending' });
+      const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+      if (songIndex !== -1) {
+        songs.value[songIndex].status = 'pending';
+      }
+    } catch (resetError) {
+      console.error('Error resetting song status:', resetError);
+    }
+  }
+};
+```
+
+### What this fixes:
+1. ✅ Shows yellow "Generating..." button (like the audio status button) when lyrics are being generated
+2. ✅ Prevents multiple users from clicking generate lyrics simultaneously
+3. ✅ Updates song status immediately so other users see it's in progress
+4. ✅ Resets status on error so users can try again
+
+### Note about check-audio-status-v2:
+You're absolutely right - the function doesn't actually update the database. The frontend is just fetching the song again hoping it was updated, but there's a race condition. The function documentation is misleading.

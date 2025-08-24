@@ -354,6 +354,15 @@
                         </span>
                       </button>
                       <button
+                        v-else-if="song.status === 'generating_lyrics'"
+                        @click.stop
+                        disabled
+                        class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 opacity-75 shadow-lg flex-1"
+                      >
+                        <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Generating...</span>
+                      </button>
+                      <button
                         v-else
                         @click.stop="handleGenerateLyrics(song)"
                         :disabled="generatingSongIndex === song.$id"
@@ -407,6 +416,16 @@
                         <span class="lg:hidden">
                           {{ audioGenerationStatus[song.$id]?.status === 'processing' ? '...' : 'Audio' }}
                         </span>
+                      </button>
+                      <button
+                        v-else-if="song.status === 'generating_lyrics'"
+                        @click.stop
+                        disabled
+                        class="bg-yellow-500 text-white px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-1.5 opacity-75 shadow-lg hover:shadow-xl"
+                      >
+                        <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span class="hidden lg:inline">Generating...</span>
+                        <span class="lg:hidden">...</span>
                       </button>
                       <button
                         v-else
@@ -761,6 +780,17 @@ const handleGenerateLyrics = async (song) => {
   generatingSongIndex.value = song.$id;
   
   try {
+    // First, update the song status to 'generating_lyrics' to prevent multiple requests
+    await songService.update(song.$id, {
+      status: 'generating_lyrics'
+    });
+    
+    // Update local state immediately
+    const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+    if (songIndex !== -1) {
+      songs.value[songIndex].status = 'generating_lyrics';
+    }
+    
     // Call the generate-lyrics-v2 function using Appwrite SDK
     const response = await functions.createExecution(
       '68a8b2b0003d1b222b37',
@@ -776,7 +806,7 @@ const handleGenerateLyrics = async (song) => {
         try {
           const updatedSong = await songService.get(song.$id);
           
-          if (updatedSong.lyrics) {
+          if (updatedSong.lyrics && updatedSong.status !== 'generating_lyrics') {
             clearInterval(pollInterval);
             // Update the song in our local array
             const songIndex = songs.value.findIndex(s => s.$id === song.$id);
@@ -797,7 +827,18 @@ const handleGenerateLyrics = async (song) => {
         clearInterval(pollInterval);
         if (generatingSongIndex.value === song.$id) {
           generatingSongIndex.value = null;
-          showToast('Lyrics generation timed out. Please try again.', 'error');
+          // Check final status
+          songService.get(song.$id).then(updatedSong => {
+            const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+            if (songIndex !== -1) {
+              songs.value[songIndex] = updatedSong;
+            }
+            if (!updatedSong.lyrics) {
+              showToast('Lyrics generation timed out. Please try again.', 'error');
+            }
+          }).catch(() => {
+            showToast('Lyrics generation timed out. Please try again.', 'error');
+          });
         }
       }, 60000);
     } else {
@@ -808,6 +849,19 @@ const handleGenerateLyrics = async (song) => {
     console.error('Error generating lyrics:', error);
     showToast('Failed to generate lyrics. Please try again.', 'error');
     generatingSongIndex.value = null;
+    
+    // Reset song status on error
+    try {
+      await songService.update(song.$id, {
+        status: 'pending'
+      });
+      const songIndex = songs.value.findIndex(s => s.$id === song.$id);
+      if (songIndex !== -1) {
+        songs.value[songIndex].status = 'pending';
+      }
+    } catch (resetError) {
+      console.error('Error resetting song status:', resetError);
+    }
   }
 };
 
