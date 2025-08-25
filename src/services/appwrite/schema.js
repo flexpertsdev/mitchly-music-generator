@@ -10,7 +10,9 @@ export const STORAGE_BUCKET = 'mitchly-music';
 export const COLLECTIONS = {
   BANDS: 'bands',
   ALBUMS: 'albums',
-  SONGS: 'songs'
+  SONGS: 'songs',
+  PLAYLISTS: 'playlists',
+  PLAYLIST_ITEMS: 'playlistItems'
 };
 
 // Band Status Types

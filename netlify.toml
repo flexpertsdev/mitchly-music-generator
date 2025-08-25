@@ -6,36 +6,8 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Function configuration
-[functions]
-  # Directory where functions are stored
-  directory = "netlify/functions"
-
-# Individual function settings
-[functions."generate-band-stream"]
-  # Maximum timeout is 26 seconds for background functions
-  timeout = 26
-
-# Edge Functions configuration
-[[edge_functions]]
-  path = "/api/generate-band-sse"
-  function = "generate-band-sse"
-
-[[edge_functions]]
-  path = "/api/generate-band-stream-production"
-  function = "generate-band-stream-production"
-
-# Development server configuration
-[dev]
-  port = 5142
-  targetPort = 5173
-  functionsPort = 5143
-
-# API redirects - route /api/* to Netlify Functions
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+# Note: Netlify functions are no longer used in this project
+# All backend functionality is handled by Appwrite
 
 # Redirects for SPA
 [[redirects]]

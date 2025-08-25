@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Mitchly Music Generator - Create comprehensive band profiles and AI-optimized song content",
   "scripts": {
-    "dev": "netlify dev",
-    "dev:vite": "vite",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -19,7 +18,8 @@
     "pinia-plugin-persistedstate": "^4.5.0",
     "vue": "^3.4.0",
     "vue-router": "^4.5.1",
-    "vue-sonner": "^2.0.8"
+    "vue-sonner": "^2.0.8",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

@@ -1,53 +1,49 @@
 <template>
   <div class="gallery min-h-screen bg-mitchly-dark">
-    <!-- Header -->
-    <header class="bg-mitchly-darker border-b border-mitchly-gray">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center justify-between">
-          <!-- Mitchly Logo -->
-          <router-link to="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img 
-              src="/ic_launcher-web.png" 
-              alt="Mitchly" 
-              class="w-10 h-10 rounded-lg"
-            />
-          </router-link>
-          
-          <!-- Title -->
-          <h1 class="text-2xl md:text-3xl font-bold text-white">
-            Band Gallery
-          </h1>
-          
-          <!-- Create Band Button -->
-          <router-link 
-            to="/"
-            class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+    <!-- Header with Actions -->
+    <AppHeader pageTitle="Band Gallery">
+      <template #actions>
+        <div class="flex items-center justify-between gap-4">
+          <!-- Filter Toggle -->
+          <button
+            @click="showMyBandsOnly = !showMyBandsOnly"
+            :class="[
+              'flex items-center gap-2 px-4 py-2 rounded-lg transition-all border',
+              showMyBandsOnly 
+                ? 'bg-mitchly-gray text-white border-mitchly-blue shadow-lg' 
+                : 'bg-transparent text-gray-300 border-gray-700 hover:border-mitchly-blue/50 hover:bg-mitchly-gray/30'
+            ]"
           >
-            <Plus class="w-5 h-5" />
-            <span class="hidden sm:inline">Create Band</span>
-          </router-link>
+            <Filter :class="['w-4 h-4 transition-transform', showMyBandsOnly ? 'rotate-180' : '']" />
+            <span>{{ showMyBandsOnly ? 'My Bands' : 'All Bands' }}</span>
+          </button>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3">
+            <router-link 
+              to="/challenge"
+              class="bg-mitchly-purple text-white hover:bg-purple-600 px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg"
+            >
+              <PlayCircle class="w-5 h-5" />
+              <span>Take Challenge</span>
+            </router-link>
+            <router-link 
+              to="/"
+              class="bg-mitchly-blue text-white hover:bg-mitchly-blue/80 px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg"
+            >
+              <Plus class="w-5 h-5" />
+              <span>Create Band</span>
+            </router-link>
+          </div>
         </div>
-      </div>
-    </header>
+      </template>
+    </AppHeader>
 
     <!-- Main Content -->
     <div class="container mx-auto p-6">
-      <!-- Filter Section -->
-      <div class="flex justify-between items-center mb-6">
+      <!-- Band Collection Title -->
+      <div class="mb-6">
         <h2 class="text-xl md:text-2xl font-bold text-white">Band Collection</h2>
-        <button
-          @click="showMyBandsOnly = !showMyBandsOnly"
-          :class="[
-            'flex items-center gap-2 px-4 py-2 rounded-lg transition-all border',
-            showMyBandsOnly 
-              ? 'bg-mitchly-blue text-white border-mitchly-blue' 
-              : 'bg-mitchly-gray text-gray-300 border-gray-700 hover:border-mitchly-blue/50'
-          ]"
-        >
-          <Filter class="w-4 h-4" />
-          <span class="hidden sm:inline">{{ showMyBandsOnly ? 'My Bands' : 'All Bands' }}</span>
-          <span class="sm:hidden">{{ showMyBandsOnly ? 'Mine' : 'All' }}</span>
-        </button>
       </div>
 
       <!-- Stats Section -->
@@ -256,7 +252,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
 import { useAuthStore } from '../stores/auth';
+import { useFavoritesStore } from '../stores/favoritesNew';
 import { account } from '../lib/appwrite';
+import AppHeader from '@/components/navigation/AppHeader.vue';
 import {
   Music,
   Music2,
@@ -277,6 +275,10 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
+const favoritesStore = useFavoritesStore();
+
+// Authentication computed
+const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 // Get or create a user ID (simple implementation for now)
 const getUserId = () => {

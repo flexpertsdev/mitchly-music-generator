@@ -80,9 +80,9 @@
     <div v-else-if="band && band.status === 'published'">
       <!-- Hero Section with Band Image -->
       <div class="relative h-64 md:h-96 overflow-hidden">
-        <!-- Background Image or Gradient (prefer album cover for hero) -->
-        <div v-if="bandImages.albumCover || bandImages.bandPhoto" class="absolute inset-0">
-          <img :src="bandImages.albumCover || bandImages.bandPhoto" :alt="bandProfile.bandName" class="w-full h-full object-cover" />
+        <!-- Background Image or Gradient (prefer band photo for hero) -->
+        <div v-if="bandImages.bandPhoto || bandImages.albumCover" class="absolute inset-0">
+          <img :src="bandImages.bandPhoto || bandImages.albumCover" :alt="bandProfile.bandName" class="w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
         </div>
         <div v-else class="absolute inset-0 bg-gradient-to-br from-mitchly-blue to-mitchly-purple">
@@ -137,8 +137,19 @@
                 </div>
               </div>
 
-              <!-- Share Button Row (separate on mobile, right-aligned) -->
-              <div class="flex justify-end">
+              <!-- Share and Like Button Row -->
+              <div class="flex justify-end gap-2">
+                <button
+                  @click="toggleFavoriteBand"
+                  :class="[
+                    'px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg text-sm',
+                    favoriteBand ? 'bg-red-500/90 hover:bg-red-500 text-white' : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur'
+                  ]"
+                  :title="favoriteBand ? 'Remove from favorites' : 'Add to favorites'"
+                >
+                  <Heart :class="['w-4 h-4', favoriteBand ? 'fill-white' : '']" />
+                  <span>{{ favoriteBand ? 'Liked' : 'Like' }}</span>
+                </button>
                 <button
                   @click="shareBand"
                   class="bg-white/90 hover:bg-white text-mitchly-dark px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold shadow-lg text-sm"
@@ -294,14 +305,24 @@
 
           <!-- Track Listing -->
           <div class="bg-mitchly-gray rounded-xl p-3 sm:p-4 md:p-6 border border-gray-800 shadow-xl">
-            <h3 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-white flex items-center gap-2">
-              <div class="w-1 h-6 bg-mitchly-blue rounded-full"></div>
-              Track Listing
-            </h3>
+            <div class="flex items-center gap-3 mb-3 sm:mb-4">
+              <!-- Album Cover Thumbnail -->
+              <div v-if="bandImages.albumCover" class="w-16 h-16 rounded-lg overflow-hidden shadow-lg flex-shrink-0">
+                <img :src="bandImages.albumCover" :alt="bandProfile.albumConcept?.title" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="w-16 h-16 bg-mitchly-dark rounded-lg flex items-center justify-center border border-gray-700 flex-shrink-0">
+                <Music class="w-8 h-8 text-gray-600" />
+              </div>
+              <h3 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                <div class="w-1 h-6 bg-mitchly-blue rounded-full"></div>
+                Track Listing
+              </h3>
+            </div>
             <div class="space-y-2 sm:space-y-3">
               <div
                 v-for="(song, index) in sortedSongs"
                 :key="song.$id"
+                :id="`track-${song.$id}`"
                 class="border border-gray-700 rounded-lg overflow-hidden hover:border-mitchly-blue/50 transition-all duration-300 bg-mitchly-dark/30"
               >
                 <!-- Track Header (Always Visible) -->
@@ -316,9 +337,25 @@
                         <span class="text-gray-400 text-sm">{{ song.trackNumber }}.</span>
                         <span class="font-medium text-white text-sm">{{ song.title }}</span>
                       </div>
-                      <ChevronDown 
-                        :class="['w-4 h-4 text-gray-400 transition-transform flex-shrink-0', expandedTracks[song.$id] ? 'rotate-180' : '']"
-                      />
+                      <!-- Mobile Icons -->
+                      <div class="flex items-center gap-1">
+                        <button
+                          @click.stop="toggleFavoriteTrack(song)"
+                          class="p-1.5 hover:bg-mitchly-dark/70 rounded-lg transition-all"
+                          :title="isFavoriteTrack(song.$id) ? 'Remove from favorites' : 'Add to favorites'"
+                        >
+                          <Heart 
+                            :class="['w-4 h-4 transition-colors', isFavoriteTrack(song.$id) ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-500']"
+                          />
+                        </button>
+                        <button
+                          @click.stop="shareTrack(song)"
+                          class="p-1.5 hover:bg-mitchly-dark/70 rounded-lg transition-all"
+                          title="Share track"
+                        >
+                          <Share class="w-4 h-4 text-gray-400 hover:text-mitchly-blue" />
+                        </button>
+                      </div>
                     </div>
                     <!-- Action Buttons (Below title on mobile) -->
                     <div class="flex gap-2 mt-2">
@@ -382,6 +419,24 @@
                       <span class="font-medium text-white">{{ song.title }}</span>
                     </div>
                     <div class="flex items-center gap-2">
+                      <!-- Desktop Icons -->
+                      <button
+                        @click.stop="toggleFavoriteTrack(song)"
+                        class="p-1.5 hover:bg-mitchly-dark/70 rounded-lg transition-all"
+                        :title="isFavoriteTrack(song.$id) ? 'Remove from favorites' : 'Add to favorites'"
+                      >
+                        <Heart 
+                          :class="['w-4 h-4 transition-colors', isFavoriteTrack(song.$id) ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-500']"
+                        />
+                      </button>
+                      <button
+                        @click.stop="shareTrack(song)"
+                        class="p-1.5 hover:bg-mitchly-dark/70 rounded-lg transition-all"
+                        title="Share track"
+                      >
+                        <Share class="w-4 h-4 text-gray-400 hover:text-mitchly-blue" />
+                      </button>
+                      <div class="w-px h-6 bg-gray-700 mx-1" />
                       <!-- Simplified button logic -->
                       <button
                         v-if="song.audioUrl"
@@ -438,10 +493,6 @@
                         <span class="hidden lg:inline">{{ generatingSongIndex === song.$id ? 'Generating...' : 'Generate Lyrics' }}</span>
                         <span class="lg:hidden">{{ generatingSongIndex === song.$id ? '...' : 'Lyrics' }}</span>
                       </button>
-                      <!-- Expand/Collapse Icon -->
-                      <ChevronDown 
-                        :class="['w-5 h-5 text-gray-400 transition-transform', expandedTracks[song.$id] ? 'rotate-180' : '']"
-                      />
                     </div>
                   </div>
                   <!-- Song Description Preview (if available) -->
@@ -624,10 +675,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { bandService, songService } from '../services/appwrite';
 import { functions } from '../lib/appwrite';
+import { useFavoritesStore } from '../stores/favoritesNew';
 import AudioPlayer from '../components/AudioPlayer.vue';
 import Chip from '../components/Chip.vue';
 import { 
@@ -638,12 +690,13 @@ import {
   MapPin, 
   Share2,
   PlayCircle,
-  ChevronDown,
   ChevronLeft,
   Zap,
   Music2,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Heart,
+  Share
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -667,6 +720,9 @@ const bandImages = ref({
 const toasts = ref([]);
 const currentlyPlayingTrack = ref(null);
 const showAudioPlayer = ref(false);
+
+// Use favorites store
+const favoritesStore = useFavoritesStore();
 
 // Tabs
 const tabs = [
@@ -699,6 +755,11 @@ const availableAudioTracks = computed(() => {
 // Polling interval for generation status
 let generationPollInterval = null;
 
+// Computed for current band favorite status
+const favoriteBand = computed(() => {
+  return band.value ? favoritesStore.isBandFavorite(band.value.$id) : false;
+});
+
 // Load band data
 onMounted(async () => {
   try {
@@ -723,6 +784,30 @@ onMounted(async () => {
           bandPhoto: band.value.bandPhotoUrl || null
         };
       }
+      
+      // Check if URL has a track hash (for shared links)
+      if (route.hash && route.hash.startsWith('#track-')) {
+        const trackId = route.hash.replace('#track-', '');
+        
+        // Switch to music tab
+        activeTab.value = 'music';
+        
+        // Expand the specific track
+        expandedTracks.value[trackId] = true;
+        
+        // Find and auto-play the track if it has audio
+        const track = songs.value.find(s => s.$id === trackId);
+        if (track && track.audioUrl) {
+          handlePlaySong(track);
+        }
+        
+        // Scroll to the track after DOM updates
+        await nextTick();
+        const element = document.getElementById(`track-${trackId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     }
   } catch (err) {
     console.error('Error loading band:', err);
@@ -736,6 +821,32 @@ onMounted(async () => {
 onUnmounted(() => {
   if (generationPollInterval) {
     clearInterval(generationPollInterval);
+  }
+});
+
+// Watch for route hash changes (for navigating between shared track links)
+watch(() => route.hash, async (newHash) => {
+  if (newHash && newHash.startsWith('#track-')) {
+    const trackId = newHash.replace('#track-', '');
+    
+    // Switch to music tab
+    activeTab.value = 'music';
+    
+    // Expand the specific track
+    expandedTracks.value[trackId] = true;
+    
+    // Find and auto-play the track if it has audio
+    const track = songs.value.find(s => s.$id === trackId);
+    if (track && track.audioUrl) {
+      handlePlaySong(track);
+    }
+    
+    // Scroll to the track after DOM updates
+    await nextTick();
+    const element = document.getElementById(`track-${trackId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 });
 
@@ -927,7 +1038,7 @@ const handleCheckAudioStatus = async (song) => {
     const result = JSON.parse(response.responseBody);
     
     if (result.success) {
-      if (result.status === 'succeeded' && result.audioUrl) {
+      if ((result.status === 'completed' || result.status === 'succeeded') && result.audioUrl) {
         // Update the song with the audio URL
         const updatedSong = await songService.get(song.$id);
         
@@ -1037,6 +1148,56 @@ const handlePlaySong = (song) => {
     duration: song.duration
   };
   showAudioPlayer.value = true;
+};
+
+// Favorite management
+const toggleFavoriteTrack = (song) => {
+  const isFavorite = favoritesStore.toggleTrack(song.$id);
+  if (isFavorite) {
+    showToast(`Added "${song.title}" to favorites`, 'success');
+  } else {
+    showToast(`Removed "${song.title}" from favorites`, 'info');
+  }
+};
+
+const toggleFavoriteBand = () => {
+  if (band.value) {
+    const isFavorite = favoritesStore.toggleBand(band.value.$id);
+    if (isFavorite) {
+      showToast(`Added ${bandProfile.value.bandName} to favorites`, 'success');
+    } else {
+      showToast(`Removed ${bandProfile.value.bandName} from favorites`, 'info');
+    }
+  }
+};
+
+const isFavoriteTrack = (trackId) => {
+  return favoritesStore.isTrackFavorite(trackId);
+};
+
+const shareTrack = async (song) => {
+  const url = `${window.location.href}#track-${song.$id}`;
+  const text = `Listen to "${song.title}" by ${bandProfile.value.bandName}`;
+  
+  if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    try {
+      await navigator.share({
+        title: song.title,
+        text,
+        url
+      });
+    } catch (err) {
+      console.log('Share cancelled or error:', err);
+    }
+  } else {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Track link copied to clipboard!', 'success');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showToast('Failed to copy link', 'error');
+    }
+  }
 };
 </script>
 

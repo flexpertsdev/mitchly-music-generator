@@ -10,6 +10,7 @@ export { DATABASE_ID, STORAGE_BUCKET, COLLECTIONS } from './schema.js';
 export * from './database.js';
 export * from './storage.js';
 export * from './schema.js';
+export * from './challenge.js';
 
 // Export serviceStatus from database (since it's defined there)
 export { serviceStatus } from './database.js';

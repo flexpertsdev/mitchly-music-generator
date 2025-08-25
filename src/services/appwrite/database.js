@@ -412,6 +412,302 @@ export const songService = {
   }
 };
 
+// Playlist Service
+export const playlistService = {
+  async create(userId, name, type = 'custom', description = '') {
+    try {
+      await checkServiceAvailability();
+      
+      const playlistData = {
+        userId,
+        name,
+        type,
+        description,
+        isPrivate: true,
+        isPublished: false,
+        coverUrl: null
+      };
+      
+      if (!serviceStatus.isAvailable) {
+        throw new Error('Database service unavailable');
+      }
+      
+      const document = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLISTS,
+        ID.unique(),
+        playlistData
+      );
+      
+      return document;
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      throw error;
+    }
+  },
+
+  async getPlaylists(userId) {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLISTS,
+        [
+          Query.equal('userId', userId),
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      
+      return response.documents;
+    } catch (error) {
+      console.error('Error fetching playlists:', error);
+      throw error;
+    }
+  },
+
+  async getFavoritesPlaylist(userId) {
+    try {
+      // Check if favorites playlist exists
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLISTS,
+        [
+          Query.equal('userId', userId),
+          Query.equal('type', 'favorites'),
+          Query.limit(1)
+        ]
+      );
+      
+      if (response.documents.length > 0) {
+        return response.documents[0];
+      }
+      
+      // Create favorites playlist if it doesn't exist
+      return await this.create(userId, 'My Favorites', 'favorites', 'Your favorite bands, albums, and tracks');
+    } catch (error) {
+      console.error('Error getting favorites playlist:', error);
+      throw error;
+    }
+  },
+
+  async addToPlaylist(playlistId, itemType, itemId, userId) {
+    try {
+      // Check if item already exists in playlist
+      const existing = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        [
+          Query.equal('playlistId', playlistId),
+          Query.equal('itemId', itemId),
+          Query.limit(1)
+        ]
+      );
+      
+      if (existing.documents.length > 0) {
+        return existing.documents[0]; // Item already in playlist
+      }
+      
+      // Get max position in playlist
+      const items = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        [
+          Query.equal('playlistId', playlistId),
+          Query.orderDesc('position'),
+          Query.limit(1)
+        ]
+      );
+      
+      const position = items.documents.length > 0 ? items.documents[0].position + 1 : 0;
+      
+      const playlistItemData = {
+        playlistId,
+        itemType,
+        itemId,
+        position,
+        userId,
+        addedAt: new Date().toISOString()
+      };
+      
+      const document = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        ID.unique(),
+        playlistItemData
+      );
+      
+      return document;
+    } catch (error) {
+      console.error('Error adding to playlist:', error);
+      throw error;
+    }
+  },
+
+  async removeFromPlaylist(playlistId, itemId) {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        [
+          Query.equal('playlistId', playlistId),
+          Query.equal('itemId', itemId),
+          Query.limit(1)
+        ]
+      );
+      
+      if (response.documents.length > 0) {
+        await databases.deleteDocument(
+          DATABASE_ID,
+          COLLECTIONS.PLAYLIST_ITEMS,
+          response.documents[0].$id
+        );
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing from playlist:', error);
+      throw error;
+    }
+  },
+
+  async getPlaylistItems(playlistId) {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        [
+          Query.equal('playlistId', playlistId),
+          Query.orderAsc('position'),
+          Query.limit(500)
+        ]
+      );
+      
+      // Group items by type for efficient fetching
+      const itemsByType = {
+        band: [],
+        album: [],
+        song: []
+      };
+      
+      response.documents.forEach(item => {
+        itemsByType[item.itemType].push(item);
+      });
+      
+      // Fetch related data for each type
+      const populatedItems = [];
+      
+      // Fetch bands
+      if (itemsByType.band.length > 0) {
+        const bandIds = itemsByType.band.map(item => item.itemId);
+        const bands = await Promise.all(
+          bandIds.map(id => bandService.get(id).catch(() => null))
+        );
+        
+        itemsByType.band.forEach((item, index) => {
+          if (bands[index]) {
+            populatedItems.push({
+              ...item,
+              data: bands[index]
+            });
+          }
+        });
+      }
+      
+      // Fetch albums
+      if (itemsByType.album.length > 0) {
+        const albumIds = itemsByType.album.map(item => item.itemId);
+        const albums = await Promise.all(
+          albumIds.map(id => albumService.get(id).catch(() => null))
+        );
+        
+        itemsByType.album.forEach((item, index) => {
+          if (albums[index]) {
+            populatedItems.push({
+              ...item,
+              data: albums[index]
+            });
+          }
+        });
+      }
+      
+      // Fetch songs
+      if (itemsByType.song.length > 0) {
+        const songIds = itemsByType.song.map(item => item.itemId);
+        const songs = await Promise.all(
+          songIds.map(id => songService.get(id).catch(() => null))
+        );
+        
+        itemsByType.song.forEach((item, index) => {
+          if (songs[index]) {
+            populatedItems.push({
+              ...item,
+              data: songs[index]
+            });
+          }
+        });
+      }
+      
+      // Sort by position
+      populatedItems.sort((a, b) => a.position - b.position);
+      
+      return populatedItems;
+    } catch (error) {
+      console.error('Error fetching playlist items:', error);
+      throw error;
+    }
+  },
+
+  async reorderPlaylistItems(playlistId, itemIds) {
+    try {
+      // Update positions for all items
+      const updates = itemIds.map((itemId, index) => 
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.PLAYLIST_ITEMS,
+          [
+            Query.equal('playlistId', playlistId),
+            Query.equal('itemId', itemId),
+            Query.limit(1)
+          ]
+        ).then(response => {
+          if (response.documents.length > 0) {
+            return databases.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.PLAYLIST_ITEMS,
+              response.documents[0].$id,
+              { position: index }
+            );
+          }
+        })
+      );
+      
+      await Promise.all(updates);
+      return true;
+    } catch (error) {
+      console.error('Error reordering playlist items:', error);
+      throw error;
+    }
+  },
+
+  async isItemInPlaylist(playlistId, itemId) {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PLAYLIST_ITEMS,
+        [
+          Query.equal('playlistId', playlistId),
+          Query.equal('itemId', itemId),
+          Query.limit(1)
+        ]
+      );
+      
+      return response.documents.length > 0;
+    } catch (error) {
+      console.error('Error checking playlist item:', error);
+      return false;
+    }
+  }
+};
+
 // Export service status checker
 export const getDatabaseStatus = () => ({
   isAvailable: serviceStatus.isAvailable,
