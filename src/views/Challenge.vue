@@ -91,14 +91,34 @@
           <p class="text-sm lg:text-base text-mitchly-purple font-medium">Which one used AI assistance? 🎧</p>
         </div>
 
-        <!-- Desktop: Side by Side Cards (Compact) -->
-        <div class="hidden lg:grid lg:grid-cols-2 gap-6 max-w-6xl mx-auto mb-6 flex-shrink-0">
+        <!-- Choice Buttons (Moved to Top) -->
+        <div class="max-w-2xl mx-auto w-full mb-6 flex-shrink-0">
+          <div class="bg-mitchly-gray/50 rounded-lg p-4 border border-gray-800">
+            <p class="text-center text-sm text-gray-400 mb-3">Make Your Choice</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                v-for="(song, index) in challengeSongs"
+                :key="`choice-${index}`"
+                @click="makeGuess(index)"
+                class="bg-mitchly-gray hover:bg-mitchly-light-gray border-2 border-gray-700 hover:border-mitchly-purple text-white font-bold py-3 px-4 rounded-lg transition-all duration-200"
+                :class="{ 
+                  'border-mitchly-purple bg-mitchly-purple/20 ring-2 ring-mitchly-purple/50': userGuess === index 
+                }"
+              >
+                <span class="text-base">Track {{ String.fromCharCode(65 + index) }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop: Side by Side Cards (Wider and Cleaner) -->
+        <div class="hidden lg:grid lg:grid-cols-2 gap-4 max-w-5xl mx-auto w-full flex-1 overflow-hidden">
           <div 
             v-for="(song, index) in challengeSongs" 
             :key="song.id"
-            class="challenge-band-card bg-mitchly-gray rounded-lg border border-gray-800 hover:border-mitchly-blue/30 transition-all duration-300 overflow-hidden group flex flex-col"
+            class="challenge-band-card bg-mitchly-gray rounded-lg transition-all duration-300 overflow-hidden group flex flex-col"
             :class="{ 
-              'ring-2 ring-mitchly-purple border-mitchly-purple': currentlyPlaying === index 
+              'ring-2 ring-red-500': currentlyPlaying === index 
             }"
           >
             <!-- Mystery Track Label -->
@@ -118,28 +138,12 @@
                 class="w-full h-full object-cover blur-3xl opacity-30"
               />
               
-              <!-- Mystery overlay -->
+              <!-- Mystery overlay (simplified) -->
               <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <div class="text-center">
-                  <div class="text-6xl mb-4 opacity-60">🎵</div>
+                  <div class="text-5xl mb-2 opacity-60">🎵</div>
                   <div class="text-lg font-bold text-white/80">Mystery Track {{ String.fromCharCode(65 + index) }}</div>
-                  <div class="text-sm text-gray-400 mt-2">Genre: {{ song.genre }}</div>
-                </div>
-              </div>
-              
-              <!-- Playing indicator overlay -->
-              <div 
-                v-if="currentlyPlaying === index"
-                class="absolute inset-0 bg-mitchly-purple/20 flex items-center justify-center"
-              >
-                <div class="bg-black/60 rounded-full p-6 border-2 border-mitchly-purple">
-                  <div class="flex items-center gap-3 text-white">
-                    <div class="animate-pulse text-2xl">▶</div>
-                    <div>
-                      <div class="text-lg font-bold">NOW PLAYING</div>
-                      <div class="text-sm opacity-80">Track {{ String.fromCharCode(65 + index) }}</div>
-                    </div>
-                  </div>
+                  <div class="text-sm text-gray-400 mt-1">{{ song.genre }}</div>
                 </div>
               </div>
 
@@ -204,9 +208,9 @@
         </div>
 
         <!-- Mobile/Tablet: Tabbed Interface -->
-        <div class="lg:hidden max-w-2xl mx-auto mb-4 flex-shrink-0">
+        <div class="lg:hidden max-w-xl mx-auto w-full flex-1 overflow-hidden">
           <!-- Tab Headers -->
-          <div class="flex bg-mitchly-gray rounded-t-lg border border-gray-800">
+          <div class="flex bg-mitchly-gray rounded-t-lg">
             <button
               v-for="(song, index) in challengeSongs"
               :key="`tab-${index}`"
@@ -233,7 +237,7 @@
           </div>
 
           <!-- Tab Content -->
-          <div class="bg-mitchly-gray rounded-b-lg border-x border-b border-gray-800">
+          <div class="bg-mitchly-gray rounded-b-lg">
             <div 
               v-for="(song, index) in challengeSongs"
               :key="`content-${index}`"
@@ -250,28 +254,12 @@
                   class="w-full h-full object-cover blur-3xl opacity-30"
                 />
                 
-                <!-- Mystery overlay -->
+                <!-- Mystery overlay (simplified) -->
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                   <div class="text-center">
-                    <div class="text-8xl mb-4 opacity-60">🎵</div>
-                    <div class="text-xl font-bold text-white/80">Mystery Track {{ String.fromCharCode(65 + index) }}</div>
-                    <div class="text-sm text-gray-400 mt-2">{{ song.genre }}</div>
-                  </div>
-                </div>
-                
-                <!-- Playing indicator overlay -->
-                <div 
-                  v-if="currentlyPlaying === index"
-                  class="absolute inset-0 bg-mitchly-purple/20 flex items-center justify-center"
-                >
-                  <div class="bg-black/60 rounded-full p-6 border-2 border-mitchly-purple">
-                    <div class="flex items-center gap-3 text-white">
-                      <div class="animate-pulse text-2xl">▶</div>
-                      <div>
-                        <div class="text-lg font-bold">NOW PLAYING</div>
-                        <div class="text-sm opacity-80">Track {{ String.fromCharCode(65 + index) }}</div>
-                      </div>
-                    </div>
+                    <div class="text-6xl mb-2 opacity-60">🎵</div>
+                    <div class="text-lg font-bold text-white/80">Mystery Track {{ String.fromCharCode(65 + index) }}</div>
+                    <div class="text-sm text-gray-400 mt-1">{{ song.genre }}</div>
                   </div>
                 </div>
               </div>
@@ -336,37 +324,6 @@
           </div>
         </div>
 
-        <!-- Visual Separator -->
-        <div class="my-4 flex items-center justify-center">
-          <div class="w-full max-w-md h-px bg-gradient-to-r from-transparent via-mitchly-purple/50 to-transparent"></div>
-        </div>
-
-        <!-- Guess Section (Always Visible) -->
-        <div class="guess-section max-w-2xl mx-auto flex-shrink-0 mt-auto">
-          <div class="text-center mb-4">
-            <h3 class="text-lg lg:text-xl font-bold text-white mb-1">Make Your Choice</h3>
-            <p class="text-sm text-gray-400">Which track used AI assistance?</p>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <button
-              v-for="(song, index) in challengeSongs"
-              :key="`guess-${index}`"
-              @click="makeGuess(index)"
-              class="bg-mitchly-gray hover:bg-mitchly-light-gray border-2 border-gray-700 hover:border-mitchly-purple text-white font-bold py-4 lg:py-6 px-4 rounded-xl transition-all duration-200"
-              :class="{ 
-                'border-mitchly-purple bg-mitchly-purple/20 ring-2 ring-mitchly-purple/50': userGuess === index 
-              }"
-            >
-              <div class="text-center">
-                <div class="text-2xl lg:text-3xl mb-2">{{ index === 0 ? '🎸' : '🌊' }}</div>
-                <div class="text-base lg:text-lg font-mono mb-1">Track {{ String.fromCharCode(65 + index) }}</div>
-                <div class="text-xs text-gray-400 mb-2">{{ song.genre }}</div>
-                <div class="text-xs font-medium text-mitchly-purple">Choose This</div>
-              </div>
-            </button>
-          </div>
-        </div>
       </div>
     </section>
 
