@@ -61,19 +61,50 @@ onMounted(async () => {
   try {
     // Check if there's an error in the query params
     if (route.query.error) {
+      console.error('OAuth error in query params:', route.query.error)
       throw new Error('Authentication was cancelled or failed')
     }
 
+    console.log('Spotify callback initiated, checking for session...')
     statusMessage.value = 'Getting your profile information...'
     
-    // Get the current session (which should now include Spotify OAuth data)
-    const session = await account.getSession('current')
+    // Try to get the current session with retries (OAuth may take a moment)
+    let session = null
+    let user = null
+    let retries = 3
+    
+    while (retries > 0 && !session) {
+      try {
+        console.log(`Attempting to get session (${4 - retries}/3)...`)
+        session = await account.getSession('current')
+        console.log('Session found:', session)
+        break
+      } catch (err) {
+        console.log('Session not ready yet, waiting...', err.message)
+        retries--
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+    }
+    
+    if (!session) {
+      console.error('No session found after OAuth redirect')
+      throw new Error('Failed to establish session after authentication')
+    }
     
     // Get the user account
-    const user = await account.get()
+    try {
+      user = await account.get()
+      console.log('User account retrieved:', user)
+    } catch (err) {
+      console.error('Failed to get user account:', err)
+      throw new Error('Failed to retrieve user information')
+    }
     
     // Store in auth store using the new setAuth method
     authStore.setAuth(user, session)
+    console.log('Auth store updated successfully')
     
     // Wait a moment to ensure state is saved
     await new Promise(resolve => setTimeout(resolve, 100))
@@ -93,31 +124,42 @@ onMounted(async () => {
         {
           userId: user.$id,
           email: user.email,
-          name: user.name,
-          spotifyId: session.providerUid,
-          provider: session.provider,
+          name: user.name || '',
+          spotifyId: session.providerUid || null,
+          provider: session.provider || null,
           createdAt: new Date().toISOString(),
           onboardingCompleted: false,
-          subscription: {
+          subscription: JSON.stringify({
             status: 'free',
             plan: 'free',
             customerId: null
-          }
+          })
         }
       )
+      console.log('User profile created successfully')
     } catch (error) {
-      // If document already exists, update it
+      // If document already exists (409), update it
       if (error.code === 409) {
-        await databases.updateDocument(
-          DATABASE_ID,
-          USERS_COLLECTION,
-          user.$id,
-          {
-            spotifyId: session.providerUid,
-            provider: session.provider,
-            lastLogin: new Date().toISOString()
-          }
-        )
+        console.log('User profile already exists, updating...')
+        try {
+          await databases.updateDocument(
+            DATABASE_ID,
+            USERS_COLLECTION,
+            user.$id,
+            {
+              spotifyId: session.providerUid || null,
+              provider: session.provider || null,
+              lastLogin: new Date().toISOString()
+            }
+          )
+          console.log('User profile updated successfully')
+        } catch (updateError) {
+          console.error('Failed to update user profile:', updateError)
+          // Continue anyway - auth is successful even if profile update fails
+        }
+      } else {
+        console.error('Failed to create user profile:', error)
+        // Continue anyway - auth is successful even if profile creation fails
       }
     }
     
@@ -129,10 +171,40 @@ onMounted(async () => {
     
   } catch (error) {
     console.error('Spotify callback error:', error)
-    statusMessage.value = 'Authentication failed. Redirecting...'
-    setTimeout(() => {
-      router.push('/auth')
-    }, 2000)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      stack: error.stack
+    })
+    
+    // Only redirect to auth if there's a real authentication failure
+    if (error.message.includes('cancelled') || error.message.includes('failed')) {
+      statusMessage.value = 'Authentication failed. Redirecting...'
+      setTimeout(() => {
+        router.push('/auth?error=spotify_failed')
+      }, 2000)
+    } else {
+      // For other errors, still try to redirect to gallery if we have a user
+      try {
+        const currentUser = await account.get()
+        if (currentUser) {
+          console.log('User exists despite error, redirecting to gallery')
+          statusMessage.value = 'Finalizing setup...'
+          setTimeout(() => {
+            router.push('/gallery')
+          }, 1000)
+        } else {
+          throw new Error('No user found')
+        }
+      } catch (fallbackError) {
+        console.error('Fallback failed:', fallbackError)
+        statusMessage.value = 'Setup incomplete. Redirecting...'
+        setTimeout(() => {
+          router.push('/auth?error=setup_failed')
+        }, 2000)
+      }
+    }
   } finally {
     loading.value = false
   }
