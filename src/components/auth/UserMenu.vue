@@ -2,7 +2,7 @@
   <div class="relative">
     <!-- User Avatar Button -->
     <button
-      @click="isOpen = !isOpen"
+      @click.stop="isOpen = !isOpen"
       class="flex items-center gap-2 bg-mitchly-gray hover:bg-mitchly-gray/80 px-3 py-2 rounded-lg transition-all"
     >
       <div class="w-8 h-8 bg-mitchly-blue rounded-full flex items-center justify-center">
@@ -115,6 +115,7 @@ const handleSubscription = async () => {
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = (event) => {
+      // If clicking outside the element, close the menu
       if (!(el === event.target || el.contains(event.target))) {
         binding.value();
       }
