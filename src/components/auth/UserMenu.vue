@@ -100,9 +100,28 @@ const closeMenu = () => {
 };
 
 const handleLogout = async () => {
-  await authStore.logout();
-  isOpen.value = false;
-  router.push('/');
+  console.log('Logout button clicked');
+  isOpen.value = false; // Close menu immediately
+  
+  try {
+    console.log('Calling authStore.logout...');
+    await authStore.logout();
+    console.log('Logout successful, navigating to home...');
+    
+    // Force navigation to home page
+    await router.push('/').catch(err => {
+      console.error('Navigation error after logout:', err);
+      // Force reload as fallback
+      window.location.href = '/';
+    });
+  } catch (error) {
+    console.error('Logout failed:', error);
+    // Even if logout fails, try to navigate away
+    await router.push('/').catch(err => {
+      console.error('Navigation error:', err);
+      window.location.href = '/';
+    });
+  }
 };
 
 const handleSubscription = async () => {

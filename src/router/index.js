@@ -3,18 +3,25 @@ import { useAuthStore } from '@/stores/auth';
 
 // Views
 import Home from '../views/Home.vue';
+import Create from '../views/Create.vue';
 import BandPage from '../views/BandPage.vue';
 import Gallery from '../views/Gallery.vue';
 import Challenge from '../views/Challenge.vue';
 import SpotifyAuth from '../views/SpotifyAuth.vue';
 import SpotifyCallback from '../views/SpotifyCallbackSimple.vue';
 import MyFavorites from '../views/MyFavorites.vue';
+import Dashboard from '../views/Dashboard.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/create',
+    name: 'Create',
+    component: Create
   },
   {
     path: '/auth',
@@ -58,6 +65,12 @@ const routes = [
     path: '/manage-bands',
     name: 'BandManagement',
     component: () => import('../views/BandManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard,
     meta: { requiresAuth: true }
   },
   // Commented out - views don't exist yet

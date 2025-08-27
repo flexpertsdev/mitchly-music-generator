@@ -180,12 +180,20 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
+      console.log('Auth store logout initiated')
       try {
+        // Attempt to delete the session from Appwrite
         await account.deleteSession('current')
+        console.log('Session deleted successfully')
+      } catch (error) {
+        console.error('Error deleting session:', error)
+        // Continue with local cleanup even if API call fails
+      } finally {
+        // Always clear local state
         this.user = null
         this.session = null
-      } catch (error) {
-        console.error('Logout error:', error)
+        this.initialized = false
+        console.log('Local auth state cleared')
       }
     },
 

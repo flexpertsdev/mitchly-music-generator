@@ -217,30 +217,62 @@ export default {
       if (conceptText.value.trim() && !isCreating.value) {
         isCreating.value = true
         try {
-          // Call the generate-band-v2 function using Appwrite SDK
-          const response = await functions.createExecution(
+          // Call the generate-band-v2 function using Appwrite SDK with async execution
+          const execution = await functions.createExecution(
             '68a8925e001edfdf0529',
             JSON.stringify({ prompt: conceptText.value }),
-            false
+            true // Changed to async execution
           )
           
-          const result = JSON.parse(response.responseBody)
+          // Poll for execution completion
+          let attempts = 0
+          const maxAttempts = 60 // 60 attempts * 2 seconds = 2 minutes max
+          let executionStatus = execution
           
-          if (result.success && result.bandId) {
-            // Get the created band
-            const band = await bandService.get(result.bandId)
+          while (executionStatus.status !== 'completed' && executionStatus.status !== 'failed' && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
+            executionStatus = await functions.getExecution('68a8925e001edfdf0529', execution.$id)
+            attempts++
             
-            // Emit the band creation event
-            emit('bandCreated', band)
+            // Update loading message based on attempts
+            if (attempts > 10) {
+              // You could emit progress updates here if needed
+              console.log('Still processing... This may take a minute...')
+            }
+          }
+          
+          if (executionStatus.status === 'completed') {
+            const result = JSON.parse(executionStatus.responseBody)
             
-            // Reset form
-            conceptText.value = ''
+            if (result.success && result.bandId) {
+              // Get the created band
+              const band = await bandService.get(result.bandId)
+              
+              // Emit the band creation event
+              emit('bandCreated', band)
+              
+              // Reset form
+              conceptText.value = ''
+            } else {
+              throw new Error(result.error || 'Failed to generate band')
+            }
+          } else if (executionStatus.status === 'failed') {
+            throw new Error(executionStatus.errors || 'Band generation failed. Please try again.')
           } else {
-            throw new Error(result.error || 'Failed to generate band')
+            throw new Error('Generation timed out. Please try again.')
           }
         } catch (error) {
           console.error('Error creating band:', error)
-          emit('generate', { error: error.message })
+          // Provide more user-friendly error messages
+          let errorMessage = 'Failed to create band. '
+          if (error.message.includes('fetch')) {
+            errorMessage += 'Network error. Please check your connection.'
+          } else if (error.message.includes('timeout')) {
+            errorMessage += 'The process is taking longer than expected. Please try again.'
+          } else {
+            errorMessage += error.message || 'Please try again.'
+          }
+          emit('generate', { error: errorMessage })
         } finally {
           isCreating.value = false
         }
@@ -267,38 +299,69 @@ export default {
           }
           prompt += `. Create ${formData.value.trackCount} tracks.`
           
-          // Call the generate-band-v2 function using Appwrite SDK
-          const response = await functions.createExecution(
+          // Call the generate-band-v2 function using Appwrite SDK with async execution
+          const execution = await functions.createExecution(
             '68a8925e001edfdf0529',
             JSON.stringify({ prompt: prompt }),
-            false
+            true // Changed to async execution
           )
           
-          const result = JSON.parse(response.responseBody)
+          // Poll for execution completion
+          let attempts = 0
+          const maxAttempts = 60 // 60 attempts * 2 seconds = 2 minutes max
+          let executionStatus = execution
           
-          if (result.success && result.bandId) {
-            // Get the created band
-            const band = await bandService.get(result.bandId)
+          while (executionStatus.status !== 'completed' && executionStatus.status !== 'failed' && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
+            executionStatus = await functions.getExecution('68a8925e001edfdf0529', execution.$id)
+            attempts++
             
-            // Emit the band creation event
-            emit('bandCreated', band)
-            
-            // Reset form
-            formData.value = {
-              bandName: '',
-              genre: '',
-              albumName: '',
-              trackCount: 8,
-              influences: '',
-              themes: '',
-              concept: ''
+            // Update loading message based on attempts
+            if (attempts > 10) {
+              console.log('Still processing... This may take a minute...')
             }
+          }
+          
+          if (executionStatus.status === 'completed') {
+            const result = JSON.parse(executionStatus.responseBody)
+            
+            if (result.success && result.bandId) {
+              // Get the created band
+              const band = await bandService.get(result.bandId)
+              
+              // Emit the band creation event
+              emit('bandCreated', band)
+              
+              // Reset form
+              formData.value = {
+                bandName: '',
+                genre: '',
+                albumName: '',
+                trackCount: 8,
+                influences: '',
+                themes: '',
+                concept: ''
+              }
+            } else {
+              throw new Error(result.error || 'Failed to generate band')
+            }
+          } else if (executionStatus.status === 'failed') {
+            throw new Error(executionStatus.errors || 'Band generation failed. Please try again.')
           } else {
-            throw new Error(result.error || 'Failed to generate band')
+            throw new Error('Generation timed out. Please try again.')
           }
         } catch (error) {
           console.error('Error creating band:', error)
-          emit('generate', { error: error.message })
+          // Provide more user-friendly error messages
+          let errorMessage = 'Failed to create band. '
+          if (error.message.includes('fetch')) {
+            errorMessage += 'Network error. Please check your connection.'
+          } else if (error.message.includes('timeout')) {
+            errorMessage += 'The process is taking longer than expected. Please try again.'
+          } else {
+            errorMessage += error.message || 'Please try again.'
+          }
+          emit('generate', { error: errorMessage })
         } finally {
           isCreating.value = false
         }

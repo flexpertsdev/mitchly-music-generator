@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitchly - Music Creation Platform</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://css.gg/css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            position: relative;
+        }
+        
+        /* Mobile Header */
+        .mobile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid #2a2a2a;
+            background: #111;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-square {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 2px;
+        }
+        
+        .logo-text {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .search-container {
+            background: #2a2a2a;
+            border-radius: 20px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 200px;
+        }
+        
+        .search-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .search-input::placeholder {
+            color: #999;
+        }
+        
+        .create-btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .create-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Desktop Sidebar (hidden on mobile) */
+        .desktop-sidebar {
+            display: none;
+            width: 280px;
+            background: #0a0a0a;
+            border-right: 1px solid #1a1a1a;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-header {
+            padding: 32px 24px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        
+        .desktop-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .desktop-logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .desktop-logo-square {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 3px;
+        }
+        
+        .desktop-logo-text {
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .desktop-create-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+        
+        .desktop-create-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px;
+        }
+        
+        .nav-section {
+            margin-bottom: 32px;
+        }
+        
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+        
+        .desktop-nav-item {
+            width: 100%;
+            background: none;
+            border: none;
+            color: #999;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .desktop-nav-item:hover {
+            background: #1a1a1a;
+            color: white;
+            transform: translateX(4px);
+        }
+        
+        .desktop-nav-item.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .nav-count {
+            margin-left: auto;
+            background: #3b82f6;
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        /* Main Content Wrapper */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+        
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        /* Hero Section */
+        .hero {
+            height: 160px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .hero-home {
+            background: linear-gradient(135deg, #3b82f6, #1e40af, #1e3a8a);
+        }
+        
+        .hero-favorites {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6);
+        }
+        
+        .hero-library {
+            background: linear-gradient(135deg, #10b981, #0891b2, #3b82f6);
+        }
+        
+        .hero-profile {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1, #3b82f6);
+        }
+        
+        .hero-create {
+            background: linear-gradient(135deg, #f59e0b, #ef4444, #ec4899);
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+        
+        .hero h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .hero p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .hero-decoration {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 48px;
+            height: 48px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            opacity: 0.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tab {
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .filter-tab.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .filter-tab:hover:not(.active) {
+            background: #333;
+        }
+        
+        .sort-dropdown {
+            background: #2a2a2a;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* Band Grid */
+        .bands-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .band-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .band-card:hover {
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.2);
+        }
+        
+        .band-image {
+            height: 160px;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .band-overlay {
+            position: absolute;
+            inset: 0;
+            opacity: 0.6;
+        }
+        
+        .band-overlay-1 { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .band-overlay-2 { background: linear-gradient(135deg, #ec4899, #3b82f6); }
+        .band-overlay-3 { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .band-overlay-4 { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+        .band-overlay-5 { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+        .band-overlay-6 { background: linear-gradient(135deg, #eab308, #ef4444); }
+        
+        .band-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .band-card:hover .band-actions {
+            opacity: 1;
+        }
+        
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+        
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        .band-card:hover .play-overlay {
+            opacity: 1;
+        }
+        
+        .play-btn {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+        
+        .band-info {
+            padding: 16px;
+        }
+        
+        .band-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .band-genre {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .band-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .band-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #2a2a2a;
+        }
+        
+        .band-plays {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .band-rating {
+            display: flex;
+            gap: 2px;
+            color: #fbbf24;
+        }
+        
+        /* Right Panel (Desktop only) */
+        .right-panel {
+            display: none;
+            width: 320px;
+            background: #0a0a0a;
+            border-left: 1px solid #1a1a1a;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .now-playing-header {
+            padding: 24px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        
+        .now-playing-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        
+        .now-playing-card {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .album-art {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .track-info {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .track-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .track-artist {
+            opacity: 0.9;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 35%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+        
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .play-control-btn {
+            width: 40px;
+            height: 40px;
+            background: white;
+            color: black;
+        }
+        
+        .queue-section {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .queue-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .queue-track {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .queue-track:hover {
+            background: #1a1a1a;
+        }
+        
+        .track-thumb {
+            width: 32px;
+            height: 32px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+        }
+        
+        .track-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .track-title {
+            font-weight: 500;
+            font-size: 12px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .track-genre {
+            color: #999;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Bottom Navigation (Mobile only) */
+        .bottom-nav {
+            display: flex;
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+            align-items: flex-end;
+        }
+        
+        .nav-item {
+            flex: 1;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active {
+            color: #3b82f6;
+        }
+        
+        .nav-item.center {
+            position: relative;
+            top: -8px;
+        }
+        
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .center-btn {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .center .nav-label {
+            color: white;
+        }
+        
+        /* Create Band Form Styles */
+        .form-section {
+            background: #1a1a1a;
+            border: 2px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+        }
+        
+        .form-input {
+            width: 100%;
+            background: #2a2a2a;
+            border: 2px solid #333;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #666;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+        
+        .example-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Stats and Special Components */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-number.pink { color: #ec4899; }
+        .stat-number.blue { color: #3b82f6; }
+        .stat-number.green { color: #10b981; }
+        .stat-number.purple { color: #8b5cf6; }
+        
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .genres-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .genre-card {
+            height: 80px;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .genre-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .genre-1 { background: linear-gradient(135deg, #ef4444, #f59e0b); }
+        .genre-2 { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .genre-3 { background: linear-gradient(135deg, #eab308, #ef4444); }
+        .genre-4 { background: linear-gradient(135deg, #10b981, #0891b2); }
+        
+        .genre-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .genre-count {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+        }
+        
+        .list-item:hover {
+            background: #2a2a2a;
+        }
+        
+        .item-thumb {
+            width: 48px;
+            height: 48px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .item-detail {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .mobile-header {
+                padding: 20px 32px;
+            }
+            
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .logo-square {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .logo-text {
+                font-size: 20px;
+            }
+            
+            .search-container {
+                width: 300px;
+                padding: 10px 16px;
+            }
+            
+            .search-input {
+                font-size: 16px;
+            }
+            
+            .content-area {
+                padding: 24px;
+            }
+            
+            .hero {
+                height: 200px;
+                padding: 32px;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .hero p {
+                font-size: 16px;
+            }
+            
+            .bands-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .band-image {
+                height: 200px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+            
+            .stat-number {
+                font-size: 24px;
+            }
+            
+            .stat-label {
+                font-size: 14px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .mobile-header {
+                display: none;
+            }
+            
+            .bottom-nav {
+                display: none;
+            }
+            
+            .desktop-sidebar {
+                display: flex;
+            }
+            
+            .app-container {
+                flex-direction: row;
+            }
+            
+            .main-wrapper {
+                flex-direction: column;
+            }
+            
+            .content-area {
+                padding: 32px;
+            }
+            
+            .hero {
+                height: 240px;
+                padding: 40px;
+            }
+            
+            .hero h1 {
+                font-size: 36px;
+            }
+            
+            .bands-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 24px;
+            }
+            
+            .band-image {
+                height: 240px;
+            }
+        }
+        
+        @media (min-width: 1400px) {
+            .right-panel {
+                display: flex;
+            }
+            
+            .bands-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+        
+        /* Animations and Transitions */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s;
+        }
+        
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+        
+        .slide-up-enter-active, .slide-up-leave-active {
+            transition: all 0.3s;
+        }
+        
+        .slide-up-enter-from, .slide-up-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .spinning {
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3a3a3a;
+        }
+        
+        /* Hide scrollbar on mobile */
+        @media (max-width: 1023px) {
+            .content-area::-webkit-scrollbar {
+                display: none;
+            }
+            .content-area {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- Mobile Header (visible on mobile/tablet) -->
+            <div class="mobile-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <div class="logo-square"></div>
+                    </div>
+                    <span class="logo-text">Mitchly</span>
+                </div>
+                <div class="header-actions">
+                    <div class="search-container">
+                        <i class="gg-search" style="color: #999;"></i>
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            placeholder="Search bands..."
+                            v-model="searchQuery"
+                        >
+                    </div>
+                    <button class="create-btn" @click="activeTab = 'create'">
+                        + Create
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Sidebar (visible on desktop) -->
+            <div class="desktop-sidebar">
+                <div class="sidebar-header">
+                    <div class="desktop-logo">
+                        <div class="desktop-logo-icon">
+                            <div class="desktop-logo-square"></div>
+                        </div>
+                        <span class="desktop-logo-text">Mitchly</span>
+                    </div>
+                    <button class="desktop-create-btn" @click="activeTab = 'create'">
+                        <i class="gg-add"></i>
+                        Create New Band
+                    </button>
+                </div>
+                
+                <div class="sidebar-nav">
+                    <div class="nav-section">
+                        <h3 class="nav-section-title">Browse</h3>
+                        <button 
+                            v-for="item in mainNavItems" 
+                            :key="item.id"
+                            :class="['desktop-nav-item', { active: activeTab === item.id }]"
+                            @click="activeTab = item.id"
+                        >
+                            <i :class="`gg-${item.icon} nav-icon`"></i>
+                            {{ item.label }}
+                        </button>
+                    </div>
+                    
+                    <div class="nav-section">
+                        <h3 class="nav-section-title">Your Music</h3>
+                        <button 
+                            v-for="item in personalNavItems" 
+                            :key="item.id"
+                            :class="['desktop-nav-item', { active: activeTab === item.id }]"
+                            @click="activeTab = item.id"
+                        >
+                            <i :class="`gg-${item.icon} nav-icon`"></i>
+                            {{ item.label }}
+                            <span v-if="item.count" class="nav-count">{{ item.count }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content Wrapper -->
+            <div class="main-wrapper">
+                <!-- Content Area -->
+                <div class="content-area">
+                    <!-- Home Page -->
+                    <div v-if="activeTab === 'home'" class="fade-animation">
+                        <div class="hero hero-home">
+                            <div class="hero-overlay"></div>
+                            <div class="hero-content">
+                                <h1>{{ isDesktop ? 'Discover Music' : 'My Bands' }}</h1>
+                                <p>{{ isDesktop ? 'Explore new sounds and discover your next favorite band' : 'Your musical creations' }}</p>
+                            </div>
+                            <div class="hero-decoration">
+                                <i class="gg-home" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <div class="filter-tabs">
+                                <button 
+                                    v-for="filter in filterTabs" 
+                                    :key="filter"
+                                    :class="['filter-tab', { active: activeFilter === filter }]"
+                                    @click="activeFilter = filter"
+                                >
+                                    {{ filter }}
+                                </button>
+                            </div>
+                            <select class="sort-dropdown" v-model="sortBy">
+                                <option value="name">Name</option>
+                                <option value="date">Date</option>
+                                <option value="plays">Plays</option>
+                            </select>
+                        </div>
+                        
+                        <div class="bands-grid">
+                            <div v-for="band in filteredBands" :key="band.id" class="band-card" @click="playBand(band)">
+                                <div class="band-image" :style="{backgroundImage: `url(${band.image})`}">
+                                    <div :class="`band-overlay band-overlay-${band.id}`"></div>
+                                    <div class="band-actions">
+                                        <button class="action-btn" @click.stop="toggleFavorite(band)">
+                                            <i :class="band.isFavorite ? 'gg-heart' : 'gg-heart'" :style="{ color: band.isFavorite ? '#ec4899' : 'white' }"></i>
+                                        </button>
+                                        <button class="action-btn" @click.stop>
+                                            <i class="gg-share"></i>
+                                        </button>
+                                    </div>
+                                    <div class="play-overlay">
+                                        <button class="play-btn">
+                                            <i class="gg-play-button" style="font-size: 20px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="band-info">
+                                    <div class="band-name">{{ band.name }}</div>
+                                    <div class="band-genre">{{ band.genre }}</div>
+                                    <div class="band-meta">
+                                        <span>📅 {{ band.year }}</span>
+                                        <span>📍 {{ band.location }}</span>
+                                    </div>
+                                    <div class="band-stats" v-if="isDesktop">
+                                        <div class="band-plays">{{ band.plays }} plays</div>
+                                        <div class="band-rating">
+                                            <span v-for="star in 5" :key="star">
+                                                {{ star <= band.rating ? '★' : '☆' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Favorites Page -->
+                    <div v-if="activeTab === 'favorites'" class="fade-animation">
+                        <div class="hero hero-favorites">
+                            <div class="hero-overlay"></div>
+                            <div class="hero-content">
+                                <h1>Your Favorites</h1>
+                                <p>{{ favorites.length }} bands you love</p>
+                            </div>
+                            <div class="hero-decoration">
+                                <i class="gg-heart" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number pink">12</div>
+                                <div class="stat-label">Liked Bands</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number blue">4.2K</div>
+                                <div class="stat-label">Total Plays</div>
+                            </div>
+                            <div class="stat-card" v-if="isTablet">
+                                <div class="stat-number green">89</div>
+                                <div class="stat-label">Hours</div>
+                            </div>
+                        </div>
+                        
+                        <h3 class="section-title">Recently Liked</h3>
+                        <div v-for="fav in favorites" :key="fav.id" class="list-item">
+                            <div class="item-thumb" :style="{backgroundImage: `url(${fav.image})`}"></div>
+                            <div class="item-info">
+                                <div class="item-name">{{ fav.name }}</div>
+                                <div class="item-detail">{{ fav.plays }} plays</div>
+                            </div>
+                            <button style="color: #ec4899;">
+                                <i class="gg-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Library Page - Your Bands -->
+                    <div v-if="activeTab === 'library'" class="fade-animation">
+                        <div class="hero hero-library">
+                            <div class="hero-overlay"></div>
+                            <div class="hero-content">
+                                <h1>My Bands</h1>
+                                <p>{{ bands.length }} AI-generated bands in your collection</p>
+                            </div>
+                            <div class="hero-decoration">
+                                <i class="gg-music-note" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <div class="filter-tabs">
+                                <button :class="['filter-tab', { active: activeFilter === 'All Bands' }]" @click="activeFilter = 'All Bands'">All</button>
+                                <button :class="['filter-tab', { active: activeFilter === 'Recent' }]" @click="activeFilter = 'Recent'">Recent</button>
+                                <button :class="['filter-tab', { active: activeFilter === 'Popular' }]" @click="activeFilter = 'Popular'">Popular</button>
+                            </div>
+                            <select class="sort-dropdown" v-model="sortBy">
+                                <option value="name">Name</option>
+                                <option value="date">Date</option>
+                                <option value="plays">Plays</option>
+                            </select>
+                        </div>
+                        
+                        <div class="bands-grid">
+                            <div v-for="band in filteredBands" :key="band.id" class="band-card" @click="playBand(band)">
+                                <div class="band-image" :style="{backgroundImage: `url(${band.image})`}">
+                                    <div :class="`band-overlay band-overlay-${band.id}`"></div>
+                                    <div class="band-actions">
+                                        <button class="action-btn" @click.stop="toggleFavorite(band)">
+                                            <i :class="band.isFavorite ? 'gg-heart' : 'gg-heart'" :style="{ color: band.isFavorite ? '#ec4899' : 'white' }"></i>
+                                        </button>
+                                        <button class="action-btn" @click.stop>
+                                            <i class="gg-share"></i>
+                                        </button>
+                                    </div>
+                                    <div class="play-overlay">
+                                        <button class="play-btn">
+                                            <i class="gg-play-button" style="font-size: 20px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="band-info">
+                                    <div class="band-name">{{ band.name }}</div>
+                                    <div class="band-genre">{{ band.genre }}</div>
+                                    <div class="band-meta">
+                                        <span>📅 {{ band.year }}</span>
+                                        <span>🎵 AI Generated</span>
+                                    </div>
+                                    <div class="band-stats" v-if="isDesktop">
+                                        <div class="band-plays">{{ band.plays }} plays</div>
+                                        <div class="band-rating">
+                                            <span v-for="star in 5" :key="star">
+                                                {{ star <= band.rating ? '★' : '☆' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Player Page -->
+                    <div v-if="activeTab === 'player'" class="fade-animation">
+                        <div style="height: 100%; display: flex; flex-direction: column;">
+                            <!-- Full Screen Player -->
+                            <div style="flex: 1; background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 40px 24px; display: flex; flex-direction: column; justify-content: center; text-align: center; position: relative;">
+                                <!-- Minimize Button (Mobile) -->
+                                <button v-if="!isDesktop" @click="activeTab = 'home'" style="position: absolute; top: 24px; left: 24px; background: rgba(0,0,0,0.3); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; display: flex; align-items: center; justify-content: center;">
+                                    <i class="gg-chevron-down"></i>
+                                </button>
+                                
+                                <!-- Album Art -->
+                                <div style="width: 200px; height: 200px; background: rgba(0, 0, 0, 0.2); border-radius: 50%; margin: 0 auto 32px; display: flex; align-items: center; justify-content: center; animation: spin 20s linear infinite;">
+                                    <i class="gg-music-note" style="font-size: 80px; color: white;"></i>
+                                </div>
+                                
+                                <!-- Track Info -->
+                                <div style="margin-bottom: 32px;">
+                                    <h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: white;">{{ nowPlaying.name }}</h1>
+                                    <p style="font-size: 18px; opacity: 0.9; color: white;">{{ nowPlaying.genre }}</p>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div style="margin-bottom: 24px;">
+                                    <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.2); border-radius: 3px; margin-bottom: 12px; overflow: hidden;">
+                                        <div style="height: 100%; background: white; width: 35%; border-radius: 3px; transition: width 0.3s;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 14px; opacity: 0.9; color: white;">
+                                        <span>2:14</span>
+                                        <span>5:23</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Player Controls -->
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 32px;">
+                                    <button style="width: 56px; height: 56px; background: rgba(255, 255, 255, 0.2); border: none; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                        <i class="gg-play-track-prev" style="font-size: 24px;"></i>
+                                    </button>
+                                    <button @click="isPlaying = !isPlaying" style="width: 80px; height: 80px; background: white; border: none; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3);">
+                                        <i :class="isPlaying ? 'gg-play-pause' : 'gg-play-button'" style="font-size: 32px;"></i>
+                                    </button>
+                                    <button style="width: 56px; height: 56px; background: rgba(255, 255, 255, 0.2); border: none; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                        <i class="gg-play-track-next" style="font-size: 24px;"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Additional Controls -->
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 32px;">
+                                    <button @click="toggleFavorite(nowPlaying)" style="background: none; border: none; color: white; opacity: 0.8; cursor: pointer;">
+                                        <i class="gg-heart" :style="{ color: nowPlaying.isFavorite ? '#ec4899' : 'white' }" style="font-size: 24px;"></i>
+                                    </button>
+                                    <button @click="showLyrics = !showLyrics" style="background: none; border: none; color: white; opacity: 0.8; cursor: pointer;">
+                                        <i class="gg-file-document" style="font-size: 24px;"></i>
+                                    </button>
+                                    <button style="background: none; border: none; color: white; opacity: 0.8; cursor: pointer;">
+                                        <i class="gg-share" style="font-size: 24px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Queue Section -->
+                            <div style="background: #1a1a1a; padding: 20px; max-height: 300px; overflow-y: auto;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h3 style="font-size: 18px; font-weight: bold;">Up Next</h3>
+                                    <div style="display: flex; gap: 12px;">
+                                        <button style="background: none; border: none; color: #999; cursor: pointer; padding: 8px;">
+                                            <i class="gg-shuffle"></i>
+                                        </button>
+                                        <button style="background: none; border: none; color: #999; cursor: pointer; padding: 8px;">
+                                            <i class="gg-repeat"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div v-for="(track, index) in queueTracks" :key="track.id" @click="playBand(track)" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s;" @mouseover="$event.target.style.background = '#2a2a2a'" @mouseout="$event.target.style.background = 'transparent'">
+                                    <div style="width: 48px; height: 48px; background-size: cover; background-position: center; border-radius: 8px;" :style="{backgroundImage: `url(${track.image})`}"></div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ track.name }}</div>
+                                        <div style="color: #999; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ track.genre }}</div>
+                                    </div>
+                                    <div style="color: #666; font-size: 14px;">{{ Math.floor(Math.random() * 3 + 3) }}:{{ Math.floor(Math.random() * 60).toString().padStart(2, '0') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Page - Creator/Subscriber Zone -->
+                    <div v-if="activeTab === 'profile'" class="fade-animation">
+                        <div class="hero hero-profile">
+                            <div class="hero-overlay"></div>
+                            <div class="hero-content">
+                                <h1>Creator Studio</h1>
+                                <p>{{ userType === 'creator' ? 'Manage your music & fans' : 'Discover amazing creators' }}</p>
+                            </div>
+                            <div class="hero-decoration">
+                                <i class="gg-profile" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- User Type Toggle -->
+                        <div style="display: flex; background: #1a1a1a; border-radius: 12px; padding: 4px; margin-bottom: 24px;">
+                            <button @click="userType = 'creator'" :class="['filter-tab', { active: userType === 'creator' }]" style="flex: 1; margin: 0;">
+                                Creator
+                            </button>
+                            <button @click="userType = 'subscriber'" :class="['filter-tab', { active: userType === 'subscriber' }]" style="flex: 1; margin: 0;">
+                                Fan/Subscriber
+                            </button>
+                        </div>
+                        
+                        <!-- Creator View -->
+                        <div v-if="userType === 'creator'">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number purple">8</div>
+                                    <div class="stat-label">AI Bands Created</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number blue">156</div>
+                                    <div class="stat-label">Subscribers</div>
+                                </div>
+                                <div class="stat-card" v-if="isTablet">
+                                    <div class="stat-number green">$2.4K</div>
+                                    <div class="stat-label">Monthly Revenue</div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="section-title">Creator Tools</h3>
+                            <div class="list-item" @click="activeTab = 'create'">
+                                <i class="gg-add" style="color: #3b82f6; width: 20px; height: 20px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">Create AI Band</div>
+                                    <div class="item-detail">Generate new music with AI</div>
+                                </div>
+                                <i class="gg-chevron-right" style="color: #666;"></i>
+                            </div>
+                            
+                            <div class="list-item">
+                                <i class="gg-music-note" style="color: #10b981; width: 20px; height: 20px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">Upload Real Music</div>
+                                    <div class="item-detail">Share your original tracks</div>
+                                </div>
+                                <div style="background: #10b981; color: white; font-size: 12px; padding: 2px 8px; border-radius: 10px;">Pro</div>
+                            </div>
+                            
+                            <div class="list-item">
+                                <i class="gg-profile" style="color: #ec4899; width: 20px; height: 20px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">Fan Engagement</div>
+                                    <div class="item-detail">Messages, comments, analytics</div>
+                                </div>
+                                <div style="background: #ec4899; color: white; font-size: 12px; padding: 2px 8px; border-radius: 10px;">12</div>
+                            </div>
+                            
+                            <div class="list-item">
+                                <i class="gg-dollar" style="color: #f59e0b; width: 20px; height: 20px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">Monetization</div>
+                                    <div class="item-detail">Subscriptions, tips, merchandise</div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="section-title">Recent Activity</h3>
+                            <div v-for="activity in creatorActivity" :key="activity.id" class="list-item">
+                                <div class="item-thumb" :style="{backgroundImage: `url(${activity.image})`}"></div>
+                                <div class="item-info">
+                                    <div class="item-name">{{ activity.title }}</div>
+                                    <div class="item-detail">{{ activity.detail }}</div>
+                                </div>
+                                <div style="color: #666; font-size: 12px;">{{ activity.time }}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Subscriber View -->
+                        <div v-if="userType === 'subscriber'">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number blue">24</div>
+                                    <div class="stat-label">Following</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number purple">89</div>
+                                    <div class="stat-label">Hours Listened</div>
+                                </div>
+                                <div class="stat-card" v-if="isTablet">
+                                    <div class="stat-number pink">12</div>
+                                    <div class="stat-label">Liked Bands</div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="section-title">Subscriptions</h3>
+                            <div v-for="creator in subscribedCreators" :key="creator.id" class="list-item">
+                                <div class="item-thumb" :style="{backgroundImage: `url(${creator.image})`}"></div>
+                                <div class="item-info">
+                                    <div class="item-name">{{ creator.name }}</div>
+                                    <div class="item-detail">{{ creator.genre }} • {{ creator.subscribers }} subscribers</div>
+                                </div>
+                                <button style="background: #3b82f6; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                                    Following
+                                </button>
+                            </div>
+                            
+                            <h3 class="section-title">Discover Creators</h3>
+                            <div v-for="creator in suggestedCreators" :key="creator.id" class="list-item">
+                                <div class="item-thumb" :style="{backgroundImage: `url(${creator.image})`}"></div>
+                                <div class="item-info">
+                                    <div class="item-name">{{ creator.name }}</div>
+                                    <div class="item-detail">{{ creator.genre }} • {{ creator.subscribers }} subscribers</div>
+                                </div>
+                                <button style="background: transparent; color: #3b82f6; border: 1px solid #3b82f6; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                                    Follow
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <h3 class="section-title">Account Settings</h3>
+                        <div v-for="setting in accountSettings" :key="setting.label" class="list-item">
+                            <i :class="`gg-${setting.icon}`" style="color: #999; width: 20px; height: 20px;"></i>
+                            <div class="item-info">
+                                <div class="item-name">{{ setting.label }}</div>
+                            </div>
+                            <i class="gg-chevron-right" style="color: #666;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Create Band Page -->
+                    <div v-if="activeTab === 'create'" class="fade-animation">
+                        <div class="hero hero-create">
+                            <div class="hero-overlay"></div>
+                            <div class="hero-content">
+                                <h1>Create New Band</h1>
+                                <p>Describe your musical vision and let AI bring it to life</p>
+                            </div>
+                            <div class="hero-decoration">
+                                <i class="gg-add" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        
+                        <form @submit.prevent="createBand">
+                            <div class="form-section">
+                                <h2 class="section-title">Band Details</h2>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="bandName">Band Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="bandName"
+                                        class="form-input"
+                                        v-model="formData.name"
+                                        placeholder="Enter your band name"
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="bandGenre">Primary Genre</label>
+                                    <input 
+                                        type="text" 
+                                        id="bandGenre"
+                                        class="form-input"
+                                        v-model="formData.genre"
+                                        placeholder="e.g., Electronic, Hip-Hop, Reggaeton"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                            
+                            <div class="form-section">
+                                <h2 class="section-title">Musical Vision</h2>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="description">Describe Your Musical Concept</label>
+                                    <textarea 
+                                        id="description"
+                                        class="form-input form-textarea"
+                                        v-model="formData.description"
+                                        placeholder="Combine Rihanna's pop sensibilities with blink-182's punk energy and NOFX's ska influences..."
+                                        required
+                                    ></textarea>
+                                    <div class="example-text">
+                                        Be specific about influences, sounds, instruments, or emotions you want to capture
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                class="submit-btn"
+                                :disabled="!canSubmit || isSubmitting"
+                            >
+                                <i class="gg-music-note" v-if="!isSubmitting"></i>
+                                <i class="gg-spinner spinning" v-if="isSubmitting"></i>
+                                {{ isSubmitting ? 'Creating Band...' : 'Generate Band' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                </div>
+                <!-- Right Panel (Desktop only) -->
+                <div class="right-panel">
+                    <div class="now-playing-header">
+                        <h3 class="now-playing-title">Now Playing</h3>
+                        <div class="now-playing-card">
+                            <div class="album-art">
+                                <i class="gg-music-note" style="font-size: 24px;"></i>
+                            </div>
+                            <div class="track-info">
+                                <div class="track-name">{{ nowPlaying.name }}</div>
+                                <div class="track-artist">{{ nowPlaying.genre }}</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <div class="time-info">
+                                    <span>2:14</span>
+                                    <span>5:23</span>
+                                </div>
+                                <div class="player-controls">
+                                    <button class="control-btn">
+                                        <i class="gg-play-track-prev"></i>
+                                    </button>
+                                    <button class="control-btn play-control-btn">
+                                        <i :class="isPlaying ? 'gg-play-pause' : 'gg-play-button'"></i>
+                                    </button>
+                                    <button class="control-btn">
+                                        <i class="gg-play-track-next"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="queue-section">
+                        <h4 class="queue-header">Up Next</h4>
+                        <div v-for="track in queueTracks" :key="track.id" class="queue-track">
+                            <div class="track-thumb" :style="{backgroundImage: `url(${track.image})`}"></div>
+                            <div class="track-details">
+                                <div class="track-title">{{ track.name }}</div>
+                                <div class="track-genre">{{ track.genre }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation (Mobile only) -->
+            <div class="bottom-nav">
+                <button 
+                    v-for="nav in navItems" 
+                    :key="nav.id" 
+                    :class="['nav-item', { active: activeTab === nav.id, center: nav.isCenter }]"
+                    @click="activeTab = nav.id"
+                >
+                    <div v-if="nav.isCenter" class="center-btn">
+                        <i :class="`gg-${nav.icon} nav-item-icon`" style="color: white; font-size: 20px;"></i>
+                    </div>
+                    <div v-else class="nav-item-icon">
+                        <i :class="`gg-${nav.icon}`"></i>
+                    </div>
+                    <span class="nav-label">{{ nav.label }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    activeTab: 'home',
+                    activeFilter: 'All Bands',
+                    searchQuery: '',
+                    sortBy: 'name',
+                    isPlaying: true,
+                    isSubmitting: false,
+                    windowWidth: window.innerWidth,
+                    showLyrics: false,
+                    userType: 'creator', // 'creator' or 'subscriber'
+                    filterTabs: ['All Bands', 'Recent', 'Popular', 'Trending'],
+                    formData: {
+                        name: '',
+                        genre: '',
+                        description: ''
+                    },
+                    bands: [
+                        {
+                            id: 1,
+                            name: "Los Lobos Digitales",
+                            genre: "Modern Reggaeton/Latin Urban",
+                            location: "San Juan, Puerto Rico",
+                            year: "2021",
+                            plays: "12.4K",
+                            rating: 5,
+                            isFavorite: true,
+                            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop"
+                        },
+                        {
+                            id: 2,
+                            name: "Neon Pulse",
+                            genre: "Synthwave/Electronic",
+                            location: "Miami, Florida",
+                            year: "2022",
+                            plays: "8.7K",
+                            rating: 4,
+                            isFavorite: false,
+                            image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+                        },
+                        {
+                            id: 3,
+                            name: "Urban Canvas",
+                            genre: "Alternative Hip-Hop",
+                            location: "Toronto, Canada",
+                            year: "2021",
+                            plays: "15.2K",
+                            rating: 5,
+                            isFavorite: true,
+                            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop"
+                        },
+                        {
+                            id: 4,
+                            name: "Electric Waves",
+                            genre: "Electronic/Dubstep",
+                            location: "Los Angeles, USA",
+                            year: "2023",
+                            plays: "22.1K",
+                            rating: 4,
+                            isFavorite: false,
+                            image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+                        },
+                        {
+                            id: 5,
+                            name: "Cosmic Drift",
+                            genre: "Ambient/Space Rock",
+                            location: "Berlin, Germany",
+                            year: "2022",
+                            plays: "6.9K",
+                            rating: 4,
+                            isFavorite: false,
+                            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop"
+                        },
+                        {
+                            id: 6,
+                            name: "Street Symphony",
+                            genre: "Hip-Hop/Jazz Fusion",
+                            location: "New York, USA",
+                            year: "2021",
+                            plays: "18.5K",
+                            rating: 5,
+                            isFavorite: true,
+                            image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+                        }
+                    ],
+                    favorites: [
+                        { id: 1, name: "Midnight Echoes", plays: "1.2K", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop" },
+                        { id: 2, name: "Digital Dreams", plays: "856", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop" },
+                        { id: 3, name: "Cosmic Vibes", plays: "2.1K", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop" }
+                    ],
+                    genres: [
+                        { id: 1, name: 'Reggaeton', count: '24 bands' },
+                        { id: 2, name: 'Electronic', count: '18 bands' },
+                        { id: 3, name: 'Hip-Hop', count: '31 bands' },
+                        { id: 4, name: 'Folk-Fusion', count: '12 bands' }
+                    ],
+                    trending: [
+                        { id: 1, name: "Los Lobos Digitales", genre: "Modern Reggaeton/Latin Urban", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop" },
+                        { id: 2, name: "Neon Pulse", genre: "Synthwave/Electronic", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop" },
+                        { id: 3, name: "Urban Canvas", genre: "Alternative Hip-Hop", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop" }
+                    ],
+                    nowPlaying: {
+                        name: "Los Lobos Digitales",
+                        genre: "Modern Reggaeton/Latin Urban"
+                    },
+                    queueTracks: [
+                        { id: 1, name: "Neon Pulse", genre: "Synthwave/Electronic", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop" },
+                        { id: 2, name: "Urban Canvas", genre: "Alternative Hip-Hop", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop" }
+                    ],
+                    menuItems: [
+                        { icon: 'music-note', label: 'My Creations', count: '8' },
+                        { icon: 'heart', label: 'Liked Bands', count: '12' },
+                        { icon: 'time', label: 'Recently Played' },
+                        { icon: 'options', label: 'Settings' }
+                    ],
+                    navItems: [
+                        { id: 'home', icon: 'home', label: 'Home' },
+                        { id: 'library', icon: 'search', label: 'My Bands' },
+                        { id: 'player', icon: 'play-button', label: 'Player', isCenter: true },
+                        { id: 'create', icon: 'add', label: 'Create' },
+                        { id: 'profile', icon: 'profile', label: 'Profile' }
+                    ],
+                    mainNavItems: [
+                        { id: 'home', icon: 'home', label: 'Discover' },
+                        { id: 'library', icon: 'music-note', label: 'Library' },
+                        { id: 'trending', icon: 'trending-up', label: 'Trending' }
+                    ],
+                    personalNavItems: [
+                        { id: 'my-bands', icon: 'album', label: 'My Bands', count: '24' },
+                        { id: 'favorites', icon: 'heart', label: 'Liked Bands', count: '12' },
+                        { id: 'profile', icon: 'profile', label: 'Profile' }
+                    ],
+                    creatorActivity: [
+                        { id: 1, title: 'Los Lobos Digitales', detail: 'New subscriber: @musicfan23', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop', time: '2h ago' },
+                        { id: 2, title: 'Neon Pulse', detail: '1.2K plays this week', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop', time: '1d ago' },
+                        { id: 3, title: 'Urban Canvas', detail: 'Featured in "Trending AI Music"', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop', time: '3d ago' }
+                    ],
+                    subscribedCreators: [
+                        { id: 1, name: 'AI Music Pioneer', genre: 'Electronic/Ambient', subscribers: '12K', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop' },
+                        { id: 2, name: 'Future Sounds', genre: 'Hip-Hop/Trap', subscribers: '8.5K', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop' }
+                    ],
+                    suggestedCreators: [
+                        { id: 1, name: 'Synthwave Master', genre: 'Retrowave/Synthwave', subscribers: '15K', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop' },
+                        { id: 2, name: 'Lo-Fi Dreams', genre: 'Lo-Fi/Chill', subscribers: '22K', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop' }
+                    ],
+                    accountSettings: [
+                        { icon: 'options', label: 'Preferences' },
+                        { icon: 'credit-card', label: 'Subscription & Billing' },
+                        { icon: 'shield', label: 'Privacy & Security' },
+                        { icon: 'support', label: 'Help & Support' }
+                    ]
+                }
+            },
+            computed: {
+                isMobile() {
+                    return this.windowWidth < 768;
+                },
+                isTablet() {
+                    return this.windowWidth >= 768 && this.windowWidth < 1024;
+                },
+                isDesktop() {
+                    return this.windowWidth >= 1024;
+                },
+                filteredBands() {
+                    let filtered = this.bands;
+                    
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase();
+                        filtered = filtered.filter(band => 
+                            band.name.toLowerCase().includes(query) ||
+                            band.genre.toLowerCase().includes(query) ||
+                            band.location.toLowerCase().includes(query)
+                        );
+                    }
+                    
+                    if (this.activeFilter === 'Recent') {
+                        filtered = filtered.filter(band => band.year === '2023' || band.year === '2022');
+                    } else if (this.activeFilter === 'Popular') {
+                        filtered = filtered.slice().sort((a, b) => parseFloat(b.plays) - parseFloat(a.plays));
+                    } else if (this.activeFilter === 'Trending') {
+                        filtered = filtered.filter(band => band.isFavorite);
+                    }
+                    
+                    // Apply sorting
+                    if (this.sortBy === 'name') {
+                        filtered = filtered.slice().sort((a, b) => a.name.localeCompare(b.name));
+                    } else if (this.sortBy === 'plays') {
+                        filtered = filtered.slice().sort((a, b) => parseFloat(b.plays) - parseFloat(a.plays));
+                    } else if (this.sortBy === 'date') {
+                        filtered = filtered.slice().sort((a, b) => b.year - a.year);
+                    }
+                    
+                    return filtered;
+                },
+                canSubmit() {
+                    return this.formData.name.trim() && 
+                           this.formData.genre.trim() && 
+                           this.formData.description.trim();
+                }
+            },
+            methods: {
+                playBand(band) {
+                    this.nowPlaying = {
+                        name: band.name,
+                        genre: band.genre
+                    };
+                    this.isPlaying = true;
+                    
+                    // Update queue with other bands
+                    this.queueTracks = this.bands.filter(b => b.id !== band.id).slice(0, 3).map(b => ({
+                        id: b.id,
+                        name: b.name,
+                        genre: b.genre,
+                        image: b.image
+                    }));
+                },
+                
+                toggleFavorite(band) {
+                    band.isFavorite = !band.isFavorite;
+                    
+                    // Update favorites list
+                    if (band.isFavorite) {
+                        this.favorites.unshift({
+                            id: band.id,
+                            name: band.name,
+                            plays: band.plays,
+                            image: band.image
+                        });
+                        // Keep only last 5 favorites
+                        this.favorites = this.favorites.slice(0, 5);
+                    } else {
+                        this.favorites = this.favorites.filter(fav => fav.id !== band.id);
+                    }
+                },
+                
+                createBand() {
+                    if (!this.canSubmit || this.isSubmitting) return;
+                    
+                    this.isSubmitting = true;
+                    
+                    // Simulate API call
+                    setTimeout(() => {
+                        // Create new band
+                        const newBand = {
+                            id: Date.now(),
+                            name: this.formData.name,
+                            genre: this.formData.genre,
+                            location: "Generated Location",
+                            year: "2024",
+                            plays: Math.floor(Math.random() * 1000) + "K",
+                            rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
+                            isFavorite: false,
+                            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop"
+                        };
+                        
+                        // Add to beginning of bands array
+                        this.bands.unshift(newBand);
+                        
+                        // Clear form
+                        this.formData = {
+                            name: '',
+                            genre: '',
+                            description: ''
+                        };
+                        
+                        this.isSubmitting = false;
+                        
+                        // Navigate back to home
+                        this.activeTab = 'home';
+                        this.activeFilter = 'Recent';
+                        
+                        // Auto-play the new band
+                        setTimeout(() => {
+                            this.playBand(newBand);
+                        }, 500);
+                    }, 2000);
+                },
+                
+                handleResize() {
+                    this.windowWidth = window.innerWidth;
+                }
+            },
+            
+            mounted() {
+                window.addEventListener('resize', this.handleResize);
+            },
+            
+            beforeUnmount() {
+                window.removeEventListener('resize', this.handleResize);
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+                

@@ -4,11 +4,11 @@
     class="fixed bottom-0 left-0 right-0 bg-mitchly-darker border-t border-mitchly-gray z-50 md:hidden"
     :style="{ paddingBottom: `${safeAreaBottom}px` }"
   >
-    <div class="relative flex items-center justify-around h-14">
+    <div class="relative flex items-center justify-between h-14">
       <!-- Home -->
       <router-link
         to="/"
-        class="flex flex-col items-center justify-center gap-1 relative transition-colors flex-1"
+        class="flex flex-col items-center justify-center gap-1 relative transition-colors w-16"
         :class="isActive('/') ? 'text-mitchly-blue' : 'text-gray-400 hover:text-gray-300'"
       >
         <Home :class="['w-5 h-5', isActive('/') ? 'fill-current' : '']" />
@@ -18,7 +18,7 @@
       <!-- Gallery -->
       <router-link
         to="/gallery"
-        class="flex flex-col items-center justify-center gap-1 relative transition-colors flex-1"
+        class="flex flex-col items-center justify-center gap-1 relative transition-colors w-16 mr-8"
         :class="isActive('/gallery') ? 'text-mitchly-blue' : 'text-gray-400 hover:text-gray-300'"
       >
         <Music2 :class="['w-5 h-5', isActive('/gallery') ? 'fill-current' : '']" />
@@ -28,15 +28,18 @@
       <!-- Player Button (Centered) -->
       <button
         @click="handlePlayerClick"
-        class="absolute left-1/2 -translate-x-1/2 -top-2 w-14 h-14 bg-gradient-to-br from-mitchly-blue to-mitchly-purple rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
+        class="absolute left-1/2 -translate-x-1/2 -top-2 w-14 h-14 bg-gradient-to-br from-mitchly-blue to-mitchly-purple rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 z-10"
       >
         <Play class="w-6 h-6 text-white fill-white ml-0.5" />
       </button>
 
+      <!-- Invisible spacer for play button -->
+      <div class="w-14" aria-hidden="true"></div>
+
       <!-- Favorites -->
       <router-link
         to="/favorites"
-        class="flex flex-col items-center justify-center gap-1 relative transition-colors flex-1"
+        class="flex flex-col items-center justify-center gap-1 relative transition-colors w-16 ml-8"
         :class="isActive('/favorites') ? 'text-mitchly-blue' : 'text-gray-400 hover:text-gray-300'"
       >
         <div class="relative">
@@ -56,7 +59,7 @@
       <router-link
         v-if="isAuthenticated"
         to="/profile"
-        class="flex flex-col items-center justify-center gap-1 relative transition-colors flex-1"
+        class="flex flex-col items-center justify-center gap-1 relative transition-colors w-16"
         :class="isActive('/profile') ? 'text-mitchly-blue' : 'text-gray-400 hover:text-gray-300'"
       >
         <User :class="['w-5 h-5', isActive('/profile') ? 'fill-current' : '']" />
@@ -67,7 +70,7 @@
       <router-link
         v-else
         to="/auth"
-        class="flex flex-col items-center justify-center gap-1 relative transition-colors flex-1"
+        class="flex flex-col items-center justify-center gap-1 relative transition-colors w-16"
         :class="isActive('/auth') ? 'text-mitchly-blue' : 'text-gray-400 hover:text-gray-300'"
       >
         <LogIn class="w-5 h-5" />
